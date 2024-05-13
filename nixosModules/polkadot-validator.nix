@@ -1,8 +1,20 @@
 { config, lib, pkgs, ... }: {
   options.dotnix.polkadot-validator = {
     enable = lib.mkEnableOption "Polkadot validator";
+
+    name = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        The human-readable name for this node.
+
+        It's used as network node name.
+      '';
+    };
   };
-  config = lib.mkIf config.dotnix.polkadot-validator.enable {
+  config = let
+    cfg = config.dotnix.polkadot-validator;
+  in lib.mkIf cfg.enable {
     systemd.services.polkadot-validator = {
       wantedBy = [
         "multi-user.target"
@@ -11,8 +23,10 @@
         "network.target"
       ];
       serviceConfig = {
-        ExecStartPre = "${pkgs.polkadot}/bin/polkadot --version";
-        ExecStart = "${pkgs.coreutils}/bin/sleep infinity";
+        ExecStart = "${pkgs.polkadot}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
+          "--validator"
+          (lib.optional (cfg.name != null) "--name=${cfg.name}")
+        ])}";
         DynamicUser = true;
         User = "polkadot";
         Group = "polkadot";
@@ -45,7 +59,7 @@
         UMask = "0027";
       };
       unitConfig = {
-        Description = "Polkadot Node";
+        Description = "Polkadot Validator";
         Documentation = "https://github.com/paritytech/polkadot";
       };
     };
