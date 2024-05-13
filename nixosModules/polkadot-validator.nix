@@ -23,6 +23,15 @@
         the `build-spec` subcommand).
       '';
     };
+
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.polkadot;
+      defaultText = lib.literalExpression "pkgs.polkadot";
+      description = ''
+        Polkadot package to use.
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -35,7 +44,7 @@
         "network.target"
       ];
       serviceConfig = {
-        ExecStart = "${pkgs.polkadot}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
+        ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
           "--validator"
           (lib.optional (cfg.name != null) "--name=${cfg.name}")
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
