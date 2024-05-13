@@ -6,6 +6,8 @@
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs: {
+    nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
+
     # usage: nix build --no-link --print-out-paths .#polkadot
     # test: $(nix build --no-link --print-out-paths .#polkadot)/bin/polkadot --version | grep -q ^polkadot
     #   https://wiki.polkadot.network/docs/maintain-guides-how-to-validate-polkadot
