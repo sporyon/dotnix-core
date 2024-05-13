@@ -11,6 +11,18 @@
         It's used as network node name.
       '';
     };
+
+    chain = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Specify the chain specification.
+
+        It can be one of the predefined ones (dev, local, or staging) or it
+        can be a path to a file with the chainspec (such as one exported by
+        the `build-spec` subcommand).
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -26,6 +38,7 @@
         ExecStart = "${pkgs.polkadot}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
           "--validator"
           (lib.optional (cfg.name != null) "--name=${cfg.name}")
+          (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
         ])}";
         DynamicUser = true;
         User = "polkadot";
