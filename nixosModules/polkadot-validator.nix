@@ -39,7 +39,9 @@
           "--validator"
           (lib.optional (cfg.name != null) "--name=${cfg.name}")
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
+          "--base-path=%S/polkadot-validator"
         ])}";
+        StateDirectory = "polkadot-validator";
         DynamicUser = true;
         User = "polkadot";
         Group = "polkadot";
