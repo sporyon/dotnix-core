@@ -10,6 +10,7 @@
       serviceConfig = {
         ExecStartPre = "${pkgs.polkadot}/bin/polkadot --version";
         ExecStart = "${pkgs.coreutils}/bin/sleep infinity";
+        DynamicUser = true;
       };
     };
   };
