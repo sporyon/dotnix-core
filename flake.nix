@@ -14,5 +14,6 @@
     #   says that the versions of all three executables[1] must be the same.
     #   [1]: polkadot, polkadot-execute-worker, polkadot-prepare-worker
     packages.x86_64-linux.polkadot = inputs.polkadot.packages.x86_64-linux.polkadot;
+    packages.x86_64-linux.subkey = inputs.polkadot.packages.x86_64-linux.subkey;
   };
 }
