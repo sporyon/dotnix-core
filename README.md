@@ -22,7 +22,18 @@ With Nix, the entire configuration of the Polkadot validator node can be observe
 
 To simplify testing and operation of the Polkadot validator, Dotnix provides easy access to an array of tools built on top of Nix's tooling such as [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) and [nixos-generators](https://github.com/nix-community/nixos-generators) which will enable users of the Dotnix to iterate quickly over their staking infrastructure. This allows to deploy Polkadot validators to a variety of cloud providers as well as self-hosted virtual machines. It can even spawn local virtual machine instances directly for any given NixOS configuration, providing a convenient way to for testing. A command line tool will be developed to add even more management capabilities of validators that have been deployed using the initial set of tools.
 
-# 📚 Wiki:
-Dotnix Quickstart Guide
-TBA
-# 
+## Usage
+
+### Testing
+
+Tests are implemented using [`nix flake check`](https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-check)
+To run all tests call
+
+    nix flake check --print-build-logs
+
+Test results are cached.  This means that subsequent calls of `nix flake check`
+will only test modified code.  To force running a test without modifying code,
+its test result can be deleted.
+E.g. to allow rerunning `checks.x86_64-linux.polkadot-validator-two-node-network`:
+
+    nix store delete $(nix build --no-link --print-out-paths .#checks.x86_64-linux.polkadot-validator-two-node-network)
