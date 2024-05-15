@@ -24,6 +24,15 @@
       '';
     };
 
+    extraArgs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      example = ["--sync=fast"];
+      description = ''
+        Additional arguments to be passed to polkadot.
+      '';
+    };
+
     package = lib.mkOption {
       type = lib.types.package;
       default = pkgs.polkadot;
@@ -49,6 +58,7 @@
           (lib.optional (cfg.name != null) "--name=${cfg.name}")
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
           "--base-path=%S/polkadot-validator"
+          cfg.extraArgs
         ])}";
         StateDirectory = "polkadot-validator";
         DynamicUser = true;
