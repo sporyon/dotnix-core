@@ -58,6 +58,7 @@
           (lib.optional (cfg.name != null) "--name=${cfg.name}")
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
           "--base-path=%S/polkadot-validator"
+          "--node-key-file=%d/node_key"
           cfg.extraArgs
         ])}";
         StateDirectory = "polkadot-validator";
@@ -95,6 +96,14 @@
       unitConfig = {
         Description = "Polkadot Validator";
         Documentation = "https://github.com/paritytech/polkadot";
+      };
+      vault = {
+        secrets.node_key = {};
+        template = ''
+           {{ with secret "secret/polkadot-validator" }}
+           {{ .Data.data | toJSON }}
+           {{ end }}
+        '';
       };
     };
   };

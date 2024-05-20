@@ -4,6 +4,9 @@
 
     polkadot.url = "github:andresilva/polkadot.nix";
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
+
+    systemd-vaultd.url = "github:numtide/systemd-vaultd";
+    systemd-vaultd.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs: rec {
     checks.x86_64-linux.polkadot-validator-two-node-network =
@@ -13,6 +16,8 @@
       };
 
     nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
+    nixosModules.systemdVaultd = inputs.systemd-vaultd.nixosModules.systemdVaultd;
+    nixosModules.vaultAgent = inputs.systemd-vaultd.nixosModules.vaultAgent;
 
     # usage: nix build --no-link --print-out-paths .#polkadot
     # test: $(nix build --no-link --print-out-paths .#polkadot)/bin/polkadot --version | grep -q ^polkadot
