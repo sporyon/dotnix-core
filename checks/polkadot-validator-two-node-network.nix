@@ -31,6 +31,7 @@ inputs.nixpkgs.lib.nixos.runTest {
 
       # Helper utilities to be used in testScript.
       environment.systemPackages = [
+        config.dotnix.polkadot-validator.package
         pkgs.jq
         pkgs.rpc
       ];
@@ -58,21 +59,17 @@ inputs.nixpkgs.lib.nixos.runTest {
           '';
         })
       ];
-
-      # Generate node keys to allow starting with the authority role.
-      systemd.services.polkadot-validator.serviceConfig.ExecStartPre = let
-        cfg = config.dotnix.polkadot-validator;
-      in
-        "${cfg.package}/bin/polkadot key generate-node-key ${lib.escapeShellArgs (lib.flatten [
-          (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
-          "--base-path=%S/polkadot-validator"
-        ])}";
     });
 
   testScript = ''
     start_all()
 
+    # Set some generated node keys to start the validator.
+    alice.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")
+    bob.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")
+
     alice.wait_for_unit("polkadot-validator.service")
+
     alice.wait_until_succeeds("rpc system_peers | jq -e '.result|length == 1'")
   '';
 }

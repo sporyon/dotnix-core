@@ -24,6 +24,28 @@ To simplify testing and operation of the Polkadot validator, Dotnix provides eas
 
 ## Usage
 
+### Secrets Management
+
+On a freshly deployed system, the Polkadot validator will be inactive until the node key gets configured.
+For configuration of the node key, the `polkadot-validator` command line utility can be used.
+
+To set the node key, it can be pasted or piped to
+
+    polkadot-validator --set-node-key
+
+Setting the node key will cause the validator to be started.  If the validator
+is already running with a different key, it will be restarted to use the newly
+supplied one instead.  The key is stored peristently, i.e. it will survive
+reboots, cauing the validator to start automatically.
+
+To remove the node key again, call
+
+    polkadot-validator --unset-node-key
+
+Removing the node key will cause the validator to be stopped.
+
+_NB a new node key can be obtained by running `polkadot key generate-node-key`._
+
 ### Testing
 
 Tests are implemented using [`nix flake check`](https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-check)

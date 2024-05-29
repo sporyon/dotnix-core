@@ -11,6 +11,11 @@
         inherit inputs nixosModules;
         system = "x86_64-linux";
       };
+    checks.x86_64-linux.polkadot-validator-secrets =
+      import ./checks/polkadot-validator-secrets.nix {
+        inherit inputs nixosModules;
+        system = "x86_64-linux";
+      };
 
     nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
 
