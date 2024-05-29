@@ -12,7 +12,7 @@ inputs.nixpkgs.lib.nixos.runTest {
   hostPkgs = inputs.nixpkgs.legacyPackages.${system};
 
   nodes =
-    inputs.nixpkgs.lib.genAttrs ["alice" "bob"] (name: { config, lib, pkgs, ... }: {
+    inputs.nixpkgs.lib.genAttrs ["alice" "bob"] (name: { config, pkgs, ... }: {
       imports = [
         nixosModules.polkadot-validator
       ];
