@@ -1,7 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "git+file:/var/src/nixpkgs-unstable";
-
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     polkadot.url = "github:andresilva/polkadot.nix";
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -19,6 +18,11 @@
 
     nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
 
+    packages.x86_64-linux.docker =
+      import ./docker.nix {
+        inherit inputs nixosModules;
+        system = "x86_64-linux";
+      };
     # usage: nix build --no-link --print-out-paths .#polkadot
     # test: $(nix build --no-link --print-out-paths .#polkadot)/bin/polkadot --version | grep -q ^polkadot
     #   https://wiki.polkadot.network/docs/maintain-guides-how-to-validate-polkadot
