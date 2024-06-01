@@ -145,9 +145,6 @@
       wantedBy = [
         "multi-user.target"
       ];
-      after = [
-        "network.target"
-      ];
       pathConfig.PathChanged = cfg.keyFile;
     };
     systemd.services.polkadot-validator-orchestrator = {
@@ -199,9 +196,6 @@
     systemd.paths.polkadot-validator-orchestrator-starter = {
       wantedBy = [
         "multi-user.target"
-      ];
-      after = [
-        "network.target"
       ];
       pathConfig = {
         PathExists = cfg.keyFile;
