@@ -5,7 +5,7 @@ Dotnix is a collection of Nix packages and NixOS modules designed for creating a
 
 ### Overview
 
-Dotnix is a collection of Nix packages, NixOS modules, and a commandline tool designed for compiling Polkadot validators, managing their deployments while emphasizing both security and ease of use.
+Dotnix is a collection of Nix packages, NixOS modules, and a command-line tool designed for compiling Polkadot validators, managing their deployments while emphasizing both security and ease of use.
 
 #### Security / Auditability
 
@@ -14,13 +14,13 @@ Dotnix aims to minimize the attack surface of a Polkadot node by only enabling s
 Auditability is facilitated by the way the Nix package manager builds packages using only predetermined build inputs, and by producing packages that never change once they have been built. During the build process, there is no arbitrary network access nor access to any file that hasn't been specified explicitly.
 Each package is stored in its own directory, like e.g. `/nix/store/nawl092prjblbhvv16kxxbk6j9gkgcqm-git-2.14.1`.
 
-The directory name consists of a unique identifier, the package name, and its version. The name and version are included only for convenience. The identifier captures all of the package's dependencies, i.e. it's a cryptographic hash of its build dependency graph, including all source files, all other packages used directly or indirectly by the build process, and any other detail like e.g. compiler flags.
+The directory name consists of a unique identifier, the package name, and its version. The name and version are included only for convenience. The identifier captures all the package's dependencies, i.e. it's a cryptographic hash of its build dependency graph, including all source files, all other packages used directly or indirectly by the build process, and any other detail like e.g. compiler flags.
 
 With Nix, the entire configuration of the Polkadot validator node can be observed at a glance for both the executing system and the validator configurations. This clarity is invaluable for those responsible maintaining these systems.
 
 #### Ease of Use
 
-To simplify testing and operation of the Polkadot validator, Dotnix provides easy access to an array of tools built on top of Nix's tooling such as [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) and [nixos-generators](https://github.com/nix-community/nixos-generators) which will enable users of the Dotnix to iterate quickly over their staking infrastructure. This allows to deploy Polkadot validators to a variety of cloud providers as well as self-hosted virtual machines. It can even spawn local virtual machine instances directly for any given NixOS configuration, providing a convenient way to for testing. A command line tool will be developed to add even more management capabilities of validators that have been deployed using the initial set of tools.
+To simplify testing and operation of the Polkadot validator, Dotnix provides easy access to an array of tools built on top of Nix's tooling such as [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) and [nixos-generators](https://github.com/nix-community/nixos-generators) which will enable users of Dotnix to iterate quickly over their staking infrastructure. This allows the deployment of Polkadot validators to a variety of cloud providers as well as self-hosted virtual machines. It can even spawn local virtual machine instances directly for any given NixOS configuration, providing a convenient way to for testing. A command line tool will be developed to add even more management capabilities of validators that have been deployed using the initial set of tools.
 
 ## Usage
 
@@ -35,8 +35,8 @@ To set the node key, it can be pasted or piped to
 
 Setting the node key will cause the validator to be started.  If the validator
 is already running with a different key, it will be restarted to use the newly
-supplied one instead.  The key is stored peristently, i.e. it will survive
-reboots, cauing the validator to start automatically.
+supplied one instead.  The key is stored persistently, i.e. it will survive
+reboots, causing the validator to start automatically.
 
 To remove the node key again, call
 
