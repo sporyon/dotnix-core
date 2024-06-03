@@ -59,3 +59,17 @@ its test result can be deleted.
 E.g. to allow rerunning `checks.x86_64-linux.polkadot-validator-two-node-network`:
 
     nix store delete $(nix build --no-link --print-out-paths .#checks.x86_64-linux.polkadot-validator-two-node-network)
+
+### Docker
+
+Building the NixOS tarball to be used in docker
+
+    nix build .#docker
+
+Importing the NixOS tarball into Docker, creating an image named dotnix-docker
+
+    docker import result/tarball/nixos-system-x86_64-linux.tar.xz dotnix-docker
+
+Running the dotnix-docker image with systemd, starting an interactive session
+
+    docker run --privileged -it dotnix-docker /init
