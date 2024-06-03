@@ -16,6 +16,13 @@
       users.users.root.password = "yolo";
       services.getty.autologinUser = "root";
 
+      # Ignore the unroutable address in 169.254.0.0/16 offered by Docker.
+      networking.dhcpcd.enable = false;
+      networking.nameservers = [
+        "1.1.1.1"
+        "8.8.8.8"
+      ];
+
       # Enabling flakes in docker
       nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
