@@ -73,3 +73,16 @@ Importing the NixOS tarball into Docker, creating an image named dotnix-docker
 Running the dotnix-docker image with systemd, starting an interactive session
 
     docker run --privileged -it dotnix-docker /init
+
+Provide a node key to start the validator
+
+    polkadot key generate-node-key | polkadot-validator --set-node-key
+
+If everything succeeded, the validator should now show up at
+[Polkadot telemtery for westend](https://telemetry.polkadot.io/#list/0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e).
+Search for _dotnix-docker_ there.
+
+Additional commands to check the running validator
+
+    systemctl status polkadot-validator.service
+    journalctl -n 1000 -f -u polkadot-validator.service
