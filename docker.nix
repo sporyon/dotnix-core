@@ -3,7 +3,7 @@
 (inputs.nixpkgs.lib.nixosSystem {
   inherit system;
   modules = [
-    ({
+    ({ config, ... }: {
       imports = [
         (inputs.nixpkgs + "/nixos/modules/virtualisation/docker-image.nix")
         nixosModules.polkadot-validator
@@ -24,6 +24,10 @@
       dotnix.polkadot-validator.chain = "westend";
       dotnix.polkadot-validator.extraArgs = [
         "--db-storage-threshold=0"
+      ];
+
+      environment.systemPackages = [
+        config.dotnix.polkadot-validator.package
       ];
     })
   ];
