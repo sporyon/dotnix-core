@@ -49,6 +49,10 @@
         Path to the Polkadot node key.
       '';
     };
+
+    enableLoadCredentialWorkaround = lib.mkEnableOption "workaround when LoadCredential= doesn't work" // {
+      interal = true;
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -163,12 +167,18 @@
             if systemctl is-active --quiet polkadot-validator.service; then
               if ! sha1sum --check --status "$CHECKSUM_FILE"; then
                 sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
+                ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
+                  install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
+                ''}
                 systemctl restart polkadot-validator.service
               else
                 : # nothing to do
               fi
             else
               sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
+              ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
+                install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
+              ''}
               systemctl start polkadot-validator.service
             fi
           else
