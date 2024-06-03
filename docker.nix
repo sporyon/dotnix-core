@@ -20,6 +20,7 @@
 
       # Validator configuration
       dotnix.polkadot-validator.enable = true;
+      dotnix.polkadot-validator.enableLoadCredentialWorkaround = true;
       dotnix.polkadot-validator.name = "dotnix-docker";
       dotnix.polkadot-validator.chain = "westend";
       dotnix.polkadot-validator.extraArgs = [
