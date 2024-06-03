@@ -1,3 +1,4 @@
+# THIS DOCKER IMAGE CONFIGURATION IS JUST FOR TESTING PURPOSES NOT FOR PRODUCTION USE
 { inputs, nixosModules, system }:
 
 (inputs.nixpkgs.lib.nixosSystem {
@@ -9,11 +10,11 @@
         nixosModules.polkadot-validator
       ];
 
-      users.users.dotnix = {
-        isNormalUser = true;
-        password = "dotnix";
-        extraGroups = [ "wheel" ];
-      };
+      # On a real system root would either not get a password at all or it
+      # would be configured using hashedPassword.
+      # For the Docker image this is good enough :)
+      users.users.root.password = "yolo";
+      services.getty.autologinUser = "root";
 
       # Enabling flakes in docker
       nix.settings.experimental-features = [ "nix-command" "flakes" ];
