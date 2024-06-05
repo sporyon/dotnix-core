@@ -68,6 +68,8 @@ Building the NixOS tarball to be used in docker
 
 To test in docker download the [tarball](https://sporyon.io/wp-content/releases/nixos-system-x86_64-linux.tar.xz)
 
+sha1sum: 3eacc4c97e0bea15dba8c9b5317df1d87ba14c36
+
 Importing the NixOS tarball into Docker, creating an image named dotnix-docker
 
     docker import result/tarball/nixos-system-x86_64-linux.tar.xz dotnix-docker
