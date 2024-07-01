@@ -18,17 +18,18 @@
 
     nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
 
-    packages.x86_64-linux.docker =
-      import ./docker.nix {
+    overlays.default = final: prev: {
+      polkadot = inputs.polkadot.packages.${final.system}.polkadot;
+    };
+
+    packages.x86_64-linux = {
+      docker = import ./docker.nix {
         inherit inputs;
         system = "x86_64-linux";
       };
-    # usage: nix build --no-link --print-out-paths .#polkadot
-    # test: $(nix build --no-link --print-out-paths .#polkadot)/bin/polkadot --version | grep -q ^polkadot
-    #   https://wiki.polkadot.network/docs/maintain-guides-how-to-validate-polkadot
-    #   says that the versions of all three executables[1] must be the same.
-    #   [1]: polkadot, polkadot-execute-worker, polkadot-prepare-worker
-    packages.x86_64-linux.polkadot = inputs.polkadot.packages.x86_64-linux.polkadot;
-    packages.x86_64-linux.subkey = inputs.polkadot.packages.x86_64-linux.subkey;
+    } //
+      inputs.self.overlays.default
+        inputs.nixpkgs.legacyPackages.x86_64-linux
+        inputs.nixpkgs.legacyPackages.x86_64-linux;
   };
 }
