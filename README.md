@@ -46,6 +46,27 @@ Removing the node key will cause the validator to be stopped.
 
 _NB a new node key can be obtained by running `polkadot key generate-node-key`._
 
+### Database Snapshot Management
+
+The `polkadot-validator` command line utility can be used to create and restore
+[database snapshots](https://wiki.polkadot.network/docs/maintain-guides-how-to-validate-polkadot#database-snapshot-services).
+
+To create a local snapshot, call
+
+    polkadot-validator --snapshot
+
+After executing successfully, the location of the snapshot file will be printed to standard output.
+
+To restore a previously create snapshot, call
+
+    polkadot-validator --restore SNAPSHOT_URL
+
+The `SNAPSHOT_URL` can either point to a local file (using a `file://` URI as produced by `polkadot-validator --snapshot`)
+or it can point to a remote snapshot (using an `https://` URI).
+
+_NB there is currently no tooling for uploading snapshots.  Please use the appropriate procedure to upload the snapshot to your
+remote storage._
+
 ### Testing
 
 Tests are implemented using [`nix flake check`](https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-check)

@@ -53,6 +53,14 @@
     enableLoadCredentialWorkaround = lib.mkEnableOption "workaround when LoadCredential= doesn't work" // {
       interal = true;
     };
+
+    snapshotDirectory = lib.mkOption {
+      type = lib.types.path;
+      default = "/root";
+      description = ''
+        Path to the directory where snapshots should be created.
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -65,21 +73,51 @@
         #   polkadot-validator --set-node-key
         #   polkadot-validator --unset-node-key
         #
+        #   polkadot-validator --snapshot
+        #   polkadot-validator --restore SNAPSHOT_URL
+        #
         set -efu
+
+        CHAIN=${lib.escapeShellArg cfg.chain}
         KEY_FILE=${lib.escapeShellArg cfg.keyFile}
         PATH=${lib.makeBinPath [
+          # XXX `or null` is required here because there appears to be an
+          # inconsistency evaluating overlays, causing checks to fail with
+          # error: attribute 'polkadot-rpc' missing
+          (pkgs.polkadot-rpc or null)
+
           pkgs.coreutils
+          pkgs.curl
+          pkgs.gnused
+          pkgs.gnutar
+          pkgs.jq
+          pkgs.lz4
+          pkgs.systemd
           pkgs.xxd
         ]}
+        SNAPSHOT_DIR=${lib.escapeShellArg cfg.snapshotDirectory}
+
         main() {
+          if test "$(id -u)" != 0; then
+            echo "$0: error: this command must be run as root" >&2
+            exit 1
+          fi
           case $1 in
+            # Node key management
             --set-node-key) set_node_key;;
             --unset-node-key) unset_node_key;;
+
+            # Database snapshot management
+            --snapshot) snapshot;;
+            --restore) shift; restore "$@";;
+
             *)
               echo "$0: error: bad argument: $1" >&2
               exit 1
           esac
         }
+
+        # Node key management
         set_node_key() {
           if test -t 0; then
             read -p 'Polkadot validator node key: ' -r -s node_key
@@ -92,6 +130,66 @@
         unset_node_key() {
           rm -f "$KEY_FILE"
         }
+
+        # Database snapshot management
+        snapshot() (
+          chain_path=$(get_chain_path)
+          response=$(rpc chain_getBlock)
+          block_height_base16=$(echo "$response" | jq -er .result.block.header.number)
+          block_height_base10=$(printf %d "$block_height_base16")
+          archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
+          (
+            trap 'systemctl start polkadot-validator' EXIT
+            systemctl stop polkadot-validator
+            tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
+          )
+          echo "file://$archive"
+        )
+        restore() (
+          snapshot_url=$1
+          chain_path=$(get_chain_path)
+          mkdir -p "$chain_path"
+          (
+            trap 'rmdir "$chain_path"/snapshot' EXIT
+            mkdir "$chain_path"/snapshot
+            (
+              trap 'rm "$chain_path"/snapshot/tarball' EXIT
+              case $snapshot_url in
+                file:*)
+                  ln -s "''${snapshot_url#file://}" "$chain_path"/snapshot/tarball
+                  ;;
+                http:*|https:*)
+                  curl "$snapshot_url" -O "$chain_path"/snapshot/tarball
+                  ;;
+                *)
+                  echo "$0: restore: unknown scheme: $snapshot_url" >&2
+                  return 1
+              esac
+              tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
+              chown -R polkadot:polkadot "$chain_path"/snapshot/db
+              (
+                trap 'systemctl start polkadot-validator' EXIT
+                systemctl stop polkadot-validator
+                mv -T "$chain_path"/db "$chain_path"/db.backup
+                mv "$chain_path"/snapshot/db "$chain_path"/db
+              )
+            )
+          )
+        )
+
+        # Helper functions
+        get_chain_path() (
+          pid=$(systemctl show --property MainPID --value polkadot-validator.service)
+          path=$(ls -l /proc/"$pid"/fd | sed -nr '
+            s:.* -> (/var/lib/private/polkadot-validator/chains/[^/]+)/db/.*:\1:p;T;q
+          ')
+          if test -z "$path"; then
+            echo "$0: get_chain_path: error: path not found." >&2
+            return 1
+          fi
+          echo "$path"
+        )
+
         main "$@"
       '')
     ];
