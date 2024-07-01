@@ -5,16 +5,16 @@
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs: {
-    checks.x86_64-linux.polkadot-validator-two-node-network =
-      import ./checks/polkadot-validator-two-node-network.nix {
-        inherit inputs;
-        system = "x86_64-linux";
-      };
-    checks.x86_64-linux.polkadot-validator-secrets =
-      import ./checks/polkadot-validator-secrets.nix {
-        inherit inputs;
-        system = "x86_64-linux";
-      };
+    checks.x86_64-linux =
+      inputs.nixpkgs.lib.mapAttrs'
+        (name: _: {
+          name = inputs.nixpkgs.lib.removeSuffix ".nix" name;
+          value = import (./checks + "/${name}") {
+            inherit inputs;
+            system = "x86_64-linux";
+          };
+        })
+        (builtins.readDir ./checks);
 
     nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
 
