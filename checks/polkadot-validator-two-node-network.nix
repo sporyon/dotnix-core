@@ -33,31 +33,11 @@ inputs.nixpkgs.lib.nixos.runTest {
       environment.systemPackages = [
         config.dotnix.polkadot-validator.package
         pkgs.jq
-        pkgs.rpc
+        pkgs.polkadot-rpc
       ];
 
       nixpkgs.overlays = [
-        (self: super: {
-          rpc = super.writers.writeDashBin "rpc" ''
-            # usage: rpc METHOD
-            set -efu
-
-            payload=$(${super.jq}/bin/jq -n --arg method "$1" '
-              {
-                jsonrpc: "2.0",
-                id: 1,
-                method: $method,
-                params: []
-              }
-            ')
-
-            ${super.curl}/bin/curl \
-                -fSs \
-                -H 'Content-Type: application/json' \
-                -d "$payload" \
-                http://localhost:9944
-          '';
-        })
+        inputs.self.overlays.default
       ];
     });
 
