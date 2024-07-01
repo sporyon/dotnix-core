@@ -4,15 +4,15 @@
     polkadot.url = "github:andresilva/polkadot.nix";
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
-  outputs = inputs: rec {
+  outputs = inputs: {
     checks.x86_64-linux.polkadot-validator-two-node-network =
       import ./checks/polkadot-validator-two-node-network.nix {
-        inherit inputs nixosModules;
+        inherit inputs;
         system = "x86_64-linux";
       };
     checks.x86_64-linux.polkadot-validator-secrets =
       import ./checks/polkadot-validator-secrets.nix {
-        inherit inputs nixosModules;
+        inherit inputs;
         system = "x86_64-linux";
       };
 
@@ -20,7 +20,7 @@
 
     packages.x86_64-linux.docker =
       import ./docker.nix {
-        inherit inputs nixosModules;
+        inherit inputs;
         system = "x86_64-linux";
       };
     # usage: nix build --no-link --print-out-paths .#polkadot

@@ -4,7 +4,7 @@
 # The test succeeds once both validators connect to each other.
 #
 
-{ inputs, nixosModules, system }:
+{ inputs, system }:
 
 inputs.nixpkgs.lib.nixos.runTest {
   name = "polkadot-validator-two-node-network";
@@ -14,7 +14,7 @@ inputs.nixpkgs.lib.nixos.runTest {
   nodes =
     inputs.nixpkgs.lib.genAttrs ["alice" "bob"] (name: { config, pkgs, ... }: {
       imports = [
-        nixosModules.polkadot-validator
+        inputs.self.nixosModules.polkadot-validator
       ];
 
       # Validator configuration.

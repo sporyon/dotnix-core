@@ -1,5 +1,5 @@
 # THIS DOCKER IMAGE CONFIGURATION IS JUST FOR TESTING PURPOSES NOT FOR PRODUCTION USE
-{ inputs, nixosModules, system }:
+{ inputs, system }:
 
 (inputs.nixpkgs.lib.nixosSystem {
   inherit system;
@@ -7,7 +7,7 @@
     ({ config, ... }: {
       imports = [
         (inputs.nixpkgs + "/nixos/modules/virtualisation/docker-image.nix")
-        nixosModules.polkadot-validator
+        inputs.self.nixosModules.polkadot-validator
       ];
 
       # On a real system root would either not get a password at all or it

@@ -4,7 +4,7 @@
 # The different scenarios are documented in the comments in `testScript` below.
 #
 
-{ inputs, nixosModules, system }:
+{ inputs, system }:
 
 inputs.nixpkgs.lib.nixos.runTest {
   name = "polkadot-validator-secrets";
@@ -15,7 +15,7 @@ inputs.nixpkgs.lib.nixos.runTest {
     # alice is a machine that starts without secrets.
     alice = { config, pkgs, ... }: {
       imports = [
-        nixosModules.polkadot-validator
+        inputs.self.nixosModules.polkadot-validator
       ];
 
       # Validator configuration.
@@ -38,7 +38,7 @@ inputs.nixpkgs.lib.nixos.runTest {
     # bob is a machine that starts with secrets.
     bob = { config, pkgs, ... }: {
       imports = [
-        nixosModules.polkadot-validator
+        inputs.self.nixosModules.polkadot-validator
       ];
 
       # Validator configuration.
