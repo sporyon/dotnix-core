@@ -50,6 +50,14 @@
       '';
     };
 
+    sessionPubkeysFile = lib.mkOption {
+      type = lib.types.str;
+      default = "/root/polkadot-validator.session_pubkeys";
+      description = ''
+        Path for storing the session public keys.
+      '';
+    };
+
     enableLoadCredentialWorkaround = lib.mkEnableOption "workaround when LoadCredential= doesn't work" // {
       interal = true;
     };
@@ -72,6 +80,8 @@
         # SYNOPSIS
         #   polkadot-validator --set-node-key
         #   polkadot-validator --unset-node-key
+        #
+        #   polkadot-validator --rotate-key
         #
         #   polkadot-validator --snapshot
         #   polkadot-validator --restore SNAPSHOT_URL
@@ -107,6 +117,9 @@
             --set-node-key) set_node_key;;
             --unset-node-key) unset_node_key;;
 
+            # Session key management
+            --rotate-key) rotate_keys;;
+
             # Database snapshot management
             --snapshot) snapshot;;
             --restore) shift; restore "$@";;
@@ -130,6 +143,13 @@
         unset_node_key() {
           rm -f "$KEY_FILE"
         }
+
+        # Session key management
+        rotate_keys() (
+          chain_path=$(get_chain_path)
+          session_pubkeys=$(rpc author_rotateKeys | jq -er .result)
+          echo "$session_pubkeys" | tee ${lib.escapeShellArg cfg.sessionPubkeysFile}
+        )
 
         # Database snapshot management
         snapshot() (

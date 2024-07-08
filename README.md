@@ -46,6 +46,12 @@ Removing the node key will cause the validator to be stopped.
 
 _NB a new node key can be obtained by running `polkadot key generate-node-key`._
 
+### Session Key Management
+
+To generate a new session keys and print the corresponding public keys to standard output, call
+
+    polkadot-validator --rotate-keys
+
 ### Database Snapshot Management
 
 The `polkadot-validator` command line utility can be used to create and restore
