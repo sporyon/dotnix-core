@@ -69,6 +69,14 @@
         Path to the directory where snapshots should be created.
       '';
     };
+
+    backupDirectory = lib.mkOption {
+      type = lib.types.path;
+      default = "/root";
+      description = ''
+        Path to the directory where backups should be created.
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -83,11 +91,14 @@
         #
         #   polkadot-validator --rotate-key
         #
+        #   polkadot-validator --backup-keystore
+        #
         #   polkadot-validator --snapshot
         #   polkadot-validator --restore SNAPSHOT_URL
         #
         set -efu
 
+        BACKUP_DIR=${lib.escapeShellArg cfg.backupDirectory}
         CHAIN=${lib.escapeShellArg cfg.chain}
         KEY_FILE=${lib.escapeShellArg cfg.keyFile}
         PATH=${lib.makeBinPath [
@@ -120,6 +131,9 @@
             # Session key management
             --rotate-key) rotate_keys;;
 
+            # Keystore management
+            --backup-keystore) backup_keystore;;
+
             # Database snapshot management
             --snapshot) snapshot;;
             --restore) shift; restore "$@";;
@@ -149,6 +163,15 @@
           chain_path=$(get_chain_path)
           session_pubkeys=$(rpc author_rotateKeys | jq -er .result)
           echo "$session_pubkeys" | tee ${lib.escapeShellArg cfg.sessionPubkeysFile}
+        )
+
+        # Keystore management
+        backup_keystore() (
+          chain_path=$(get_chain_path)
+          now=$(date -Is)
+          archive=$BACKUP_DIR/''${CHAIN}_keystore_$now.tar.lz4
+          tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
+          echo "$archive"
         )
 
         # Database snapshot management

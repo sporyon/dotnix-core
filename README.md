@@ -52,6 +52,14 @@ To generate a new session keys and print the corresponding public keys to standa
 
     polkadot-validator --rotate-keys
 
+### Keystore Management
+
+To create a local backup of the keystore data, call
+
+    polkadot-validator --backup-keystore
+
+After executing successfully, the location of the backup file will be printed to standard output.
+
 ### Database Snapshot Management
 
 The `polkadot-validator` command line utility can be used to create and restore
