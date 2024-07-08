@@ -93,6 +93,10 @@
         #
         #   polkadot-validator --backup-keystore
         #
+        #   polkadot-validator --clean-logs
+        #   polkadot-validator --restart
+        #   polkadot-validator --stop
+        #
         #   polkadot-validator --snapshot
         #   polkadot-validator --restore SNAPSHOT_URL
         #
@@ -134,6 +138,11 @@
             # Keystore management
             --backup-keystore) backup_keystore;;
 
+            # Service management
+            --clean-logs) clean_logs;;
+            --restart) restart;;
+            --stop) stop;;
+
             # Database snapshot management
             --snapshot) snapshot;;
             --restore) shift; restore "$@";;
@@ -173,6 +182,17 @@
           tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
           echo "$archive"
         )
+
+        # Service management
+        clean_logs() {
+          journalctl --vacuum-time=2d
+        }
+        restart() {
+          systemctl restart polkadot-validator.service
+        }
+        stop() {
+          systemctl stop polkadot-validator.service
+        }
 
         # Database snapshot management
         snapshot() (

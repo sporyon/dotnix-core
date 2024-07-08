@@ -60,6 +60,20 @@ To create a local backup of the keystore data, call
 
 After executing successfully, the location of the backup file will be printed to standard output.
 
+### Service Management
+
+Administrative tasks regarding the Polkadot validator service can be performed
+using the `polkadot-validator` command line utility.
+
+To purge logs older than two days, call
+
+    polkadot-validator --clean-logs
+
+To stop or restart the Polkadot validator service, call, respectively
+
+    polkadot-validator --stop
+    polkadot-validator --restart
+
 ### Database Snapshot Management
 
 The `polkadot-validator` command line utility can be used to create and restore
