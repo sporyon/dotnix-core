@@ -100,6 +100,14 @@
         #   polkadot-validator --snapshot
         #   polkadot-validator --restore SNAPSHOT_URL
         #
+        #   polkadot-validator --full-archive-node-setup
+        #   polkadot-validator --full-setup
+        #   polkadot-validator --prepare
+        #   polkadot-validator --update-process-exporter
+        #   polkadot-validator --update-polkadot
+        #   polkadot-validator --update-promtail
+        #   polkadot-validator --update-snapshot-script
+        #
         set -efu
 
         BACKUP_DIR=${lib.escapeShellArg cfg.backupDirectory}
@@ -146,6 +154,15 @@
             # Database snapshot management
             --snapshot) snapshot;;
             --restore) shift; restore "$@";;
+
+            # Informative functions
+            --full-archive-node-setup) full_archive_node_setup;;
+            --full-setup) full_setup;;
+            --prepare) prepare;;
+            --update-process-exporter) update_process_exporter;;
+            --update-polkadot) update_polkadot;;
+            --update-promtail) update_promtail;;
+            --update-snapshot-script) update_snapshot_script;;
 
             *)
               echo "$0: error: bad argument: $1" >&2
@@ -240,6 +257,29 @@
           )
         )
 
+        # Informative functions
+        full_archive_node_setup() {
+          print_install_instructions
+        }
+        full_setup() {
+          print_setup_instructions
+        }
+        prepare() {
+          print_setup_instructions
+        }
+        update_process_exporter() {
+          print_update_instructions
+        }
+        update_polkadot() {
+          print_update_instructions
+        }
+        update_promtail() {
+          print_update_instructions
+        }
+        update_snapshot_script() {
+          print_update_instructions
+        }
+
         # Helper functions
         get_chain_path() (
           pid=$(systemctl show --property MainPID --value polkadot-validator.service)
@@ -251,6 +291,27 @@
             return 1
           fi
           echo "$path"
+        )
+        print_setup_instructions() (
+          cat >&2 ${pkgs.writeText "setup.txt" ''
+            This function has no effect.
+            The Polkadot validator has already been setup on this system.
+
+            For details about Dotnix, see
+            https://github.com/sporyon/dotnix-core/blob/main/README.md
+          ''}
+        )
+        print_update_instructions() (
+          cat >&2 ${pkgs.writeText "update-instructions.txt" ''
+            The Polkadot validator cannot be updated interactively.
+            Instead, updated your Nix configuration and rebuild this system.
+
+            For details about updating Nix flakes, see
+            https://nix.dev/manual/nix/2.23/command-ref/new-cli/nix3-flake-update
+
+            For details about Dotnix, see
+            https://github.com/sporyon/dotnix-core/blob/main/README.md
+          ''}
         )
 
         main "$@"
