@@ -95,6 +95,26 @@ or it can point to a remote snapshot (using an `https://` URI).
 _NB there is currently no tooling for uploading snapshots.  Please use the appropriate procedure to upload the snapshot to your
 remote storage._
 
+### Audit Trail
+
+The `list-dependencies` command line utility can be used to obtain the dependencies of your validator.
+The result is a list of nix store paths that can be used for further auditing.
+A nix store path looks like this: /nix/store/b6gvzjyb2pg0kjfwrjmg1vfhh54ad73z-firefox-33.1/
+where b6gvzjyb2pg0… is a cryptographic hash capturing the package's build dependency graph.
+This result is reproducible across machines and the same input should always produce the same output.
+
+To obtain the runtime Dependencies, call
+
+    list-dependencies --runtime PATH
+
+After a successful execution the result will be printed to standard output.
+
+To obtain the buildtime dependencies, call
+
+    list-dependencies --all PATH
+
+After a successful execution the result will be printed to standard output.
+
 ### Testing
 
 Tests are implemented using [`nix flake check`](https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-check)
