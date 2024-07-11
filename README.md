@@ -5,7 +5,7 @@ Dotnix is a collection of Nix packages and NixOS modules designed for creating a
 
 ### Overview
 
-Dotnix is a collection of Nix packages, NixOS modules, and a command-line tool designed for compiling Polkadot validators, managing their deployments while emphasizing both security and ease of use.
+Dotnix is a collection of Nix packages, NixOS modules, and a command line tool designed for compiling Polkadot validators, managing their deployments while emphasizing both security and ease of use.
 
 #### Security / Auditability
 
@@ -14,7 +14,7 @@ Dotnix aims to minimize the attack surface of a Polkadot node by only enabling s
 Auditability is facilitated by the way the Nix package manager builds packages using only predetermined build inputs, and by producing packages that never change once they have been built. During the build process, there is no arbitrary network access nor access to any file that hasn't been specified explicitly.
 Each package is stored in its own directory, like e.g. `/nix/store/nawl092prjblbhvv16kxxbk6j9gkgcqm-git-2.14.1`.
 
-The directory name consists of a unique identifier, the package name, and its version. The name and version are included only for convenience. The identifier captures all the package's dependencies, i.e. it's a cryptographic hash of its build dependency graph, including all source files, all other packages used directly or indirectly by the build process, and any other detail like e.g. compiler flags.
+The directory name consists of a unique identifier, the package name, and its version. The name and version are included only for convenience. The identifier captures all of the package's dependencies, i.e. it's a cryptographic hash of its build dependency graph, including all source files, all other packages used directly or indirectly by the build process, and any other detail like e.g. compiler flags.
 
 With Nix, the entire configuration of the Polkadot validator node can be observed at a glance for both the executing system and the validator configurations. This clarity is invaluable for those responsible maintaining these systems.
 
