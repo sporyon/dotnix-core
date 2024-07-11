@@ -21,6 +21,7 @@
     overlays.default = final: prev: {
       polkadot = inputs.polkadot.packages.${final.system}.polkadot;
       polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
+      list-dependencies = final.callPackage ./pkgs/list-dependencies.nix {};
     };
 
     packages.x86_64-linux = {
