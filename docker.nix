@@ -4,7 +4,7 @@
 (inputs.nixpkgs.lib.nixosSystem {
   inherit system;
   modules = [
-    ({ config, ... }: {
+    ({ config, pkgs,  ... }: {
       imports = [
         (inputs.nixpkgs + "/nixos/modules/virtualisation/docker-image.nix")
         inputs.self.nixosModules.polkadot-validator
@@ -26,6 +26,10 @@
       # Enabling flakes in docker
       nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
+      nixpkgs.overlays = [
+        inputs.self.overlays.default
+      ];
+
       # Validator configuration
       dotnix.polkadot-validator.enable = true;
       dotnix.polkadot-validator.enableLoadCredentialWorkaround = true;
@@ -37,6 +41,7 @@
 
       environment.systemPackages = [
         config.dotnix.polkadot-validator.package
+        pkgs.list-dependencies
       ];
     })
   ];
