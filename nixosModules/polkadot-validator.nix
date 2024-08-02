@@ -257,6 +257,7 @@
               (
                 trap restart EXIT
                 stop
+                rm -fR "$chain_path"/db.backup
                 mv -T "$chain_path"/db "$chain_path"/db.backup
                 mv "$chain_path"/snapshot/db "$chain_path"/db
               )
