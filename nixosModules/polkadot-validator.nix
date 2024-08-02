@@ -92,7 +92,7 @@
         #   polkadot-validator --set-node-key
         #   polkadot-validator --unset-node-key
         #
-        #   polkadot-validator --rotate-key
+        #   polkadot-validator --rotate-keys
         #
         #   polkadot-validator --backup-keystore
         #
@@ -144,7 +144,7 @@
             --unset-node-key) unset_node_key;;
 
             # Session key management
-            --rotate-key) rotate_keys;;
+            --rotate-keys) rotate_keys;;
 
             # Keystore management
             --backup-keystore) backup_keystore;;

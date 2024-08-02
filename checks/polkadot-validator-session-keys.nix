@@ -41,8 +41,8 @@ inputs.nixpkgs.lib.nixos.runTest {
     alice.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")
     alice.wait_until_succeeds("rpc system_name")
 
-    alice.succeed("polkadot-validator --rotate-key > /tmp/key1")
-    alice.succeed("polkadot-validator --rotate-key > /tmp/key2")
+    alice.succeed("polkadot-validator --rotate-keys > /tmp/key1")
+    alice.succeed("polkadot-validator --rotate-keys > /tmp/key2")
     alice.succeed("diff -u /tmp/key1 /tmp/key2 || test $? = 1")
   '';
 }
