@@ -13,9 +13,9 @@ inputs.nixpkgs.lib.nixos.runTest {
   nodes = {
     alice = { config, pkgs, ... }: {
       # Files used in testScript.
-      environment.etc."mockdep".source = import ./mockdep.nix;
+      environment.etc."mockdep".source = ./.;
       environment.etc."mockdep.all.sha256sums".source = builtins.toFile "mockdep.all.sha256sums" ''
-        0e4bce8f2fa87b551d73db72c5a5565968ffa2fd916c2dbccc7bc533ba1687b2  -
+        3bc8af3aadc8ef233a108d56ef36a0c973b14527116f49b33c06443de92d18d2  -
       '';
       environment.etc."mockdep.runtime.sha256sums".source = builtins.toFile "mockdep.runtime.sha256sums" ''
         026374dc4f48f74804898e445111a64b40cd003d3aebeec9e7133b608aeabb9a  -
@@ -25,6 +25,12 @@ inputs.nixpkgs.lib.nixos.runTest {
       environment.systemPackages = [
         pkgs.coreutils
         pkgs.list-dependencies
+        pkgs.nix
+      ];
+
+      nix.settings.experimental-features = [
+        "flakes"
+        "nix-command"
       ];
 
       nixpkgs.overlays = [
@@ -34,7 +40,8 @@ inputs.nixpkgs.lib.nixos.runTest {
   };
 
   testScript = ''
-    alice.succeed("list-dependencies --all /etc/mockdep | sort -u | sha256sum -c /etc/mockdep.all.sha256sums")
-    alice.succeed("list-dependencies --runtime /etc/mockdep | sort -u | sha256sum -c /etc/mockdep.runtime.sha256sums")
+    alice.succeed("nix-build /etc/mockdep/mockdep.nix")
+    alice.succeed("list-dependencies --runtime ./result | sha256sum -c /etc/mockdep.runtime.sha256sums")
+    alice.succeed("list-dependencies --runtime ./result | sha256sum -c /etc/mockdep.runtime.sha256sums")
   '';
 }
