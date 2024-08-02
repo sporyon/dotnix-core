@@ -115,6 +115,8 @@ To obtain the buildtime dependencies, call
 
 After a successful execution the result will be printed to standard output.
 
+_NB an auditable path can be obtained by e.g. `nix-build --no-out-link -A nano '<nixpkgs>'`._
+
 ### Testing
 
 Tests are implemented using [`nix flake check`](https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-check)
