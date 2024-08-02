@@ -12,13 +12,19 @@ inputs.nixpkgs.lib.nixos.runTest {
 
   nodes = {
     alice = { config, pkgs, ... }: {
+      # Files used in testScript.
+      environment.etc."mockdep".source = import ./mockdep.nix;
+      environment.etc."mockdep.all.sha256sums".source = builtins.toFile "mockdep.all.sha256sums" ''
+        0e4bce8f2fa87b551d73db72c5a5565968ffa2fd916c2dbccc7bc533ba1687b2  -
+      '';
+      environment.etc."mockdep.runtime.sha256sums".source = builtins.toFile "mockdep.runtime.sha256sums" ''
+        026374dc4f48f74804898e445111a64b40cd003d3aebeec9e7133b608aeabb9a  -
+      '';
+
       # Helper utilities to be used in testScript.
       environment.systemPackages = [
         pkgs.coreutils
         pkgs.list-dependencies
-        (pkgs.writers.writeDashBin "derp" ''
-          echo ${import ./mockdep.nix}
-        '')
       ];
 
       nixpkgs.overlays = [
@@ -27,17 +33,8 @@ inputs.nixpkgs.lib.nixos.runTest {
     };
   };
 
-
-  testScript = let
-    mockdep = import ./mockdep.nix;
-    sha256sums.all = builtins.toFile "all-dependencies.sha256sum" ''
-      0e4bce8f2fa87b551d73db72c5a5565968ffa2fd916c2dbccc7bc533ba1687b2  -
-    '';
-    sha256sums.runtime = builtins.toFile "runtime-dependencies.sha256sum" ''
-      026374dc4f48f74804898e445111a64b40cd003d3aebeec9e7133b608aeabb9a  -
-    '';
-  in ''
-    alice.succeed("list-dependencies --all ${mockdep} | sort | sha256sum -c ${sha256sums.all}")
-    alice.succeed("list-dependencies --runtime ${mockdep} | sort | sha256sum -c ${sha256sums.runtime}")
+  testScript = ''
+    alice.succeed("list-dependencies --all /etc/mockdep | sort -u | sha256sum -c /etc/mockdep.all.sha256sums")
+    alice.succeed("list-dependencies --runtime /etc/mockdep | sort -u | sha256sum -c /etc/mockdep.runtime.sha256sums")
   '';
 }
