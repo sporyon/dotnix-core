@@ -205,6 +205,9 @@
           journalctl --vacuum-time=2d
         }
         restart() {
+          ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
+            install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
+          ''}
           systemctl restart polkadot-validator.service
         }
         stop() {
@@ -219,8 +222,8 @@
           block_height_base10=$(printf %d "$block_height_base16")
           archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
           (
-            trap 'systemctl start polkadot-validator' EXIT
-            systemctl stop polkadot-validator
+            trap restart EXIT
+            stop
             tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
           )
           echo "file://$archive"
@@ -248,8 +251,8 @@
               tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
               chown -R polkadot:polkadot "$chain_path"/snapshot/db
               (
-                trap 'systemctl start polkadot-validator' EXIT
-                systemctl stop polkadot-validator
+                trap restart EXIT
+                stop
                 mv -T "$chain_path"/db "$chain_path"/db.backup
                 mv "$chain_path"/snapshot/db "$chain_path"/db
               )
