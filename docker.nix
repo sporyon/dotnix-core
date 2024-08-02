@@ -43,6 +43,8 @@
         config.dotnix.polkadot-validator.package
         pkgs.list-dependencies
       ];
+
+      system.stateVersion = "24.11";
     })
   ];
 }).config.system.build.tarball

@@ -32,6 +32,8 @@ inputs.nixpkgs.lib.nixos.runTest {
     nixpkgs.overlays = [
       inputs.self.overlays.default
     ];
+
+    system.stateVersion = "24.11";
   };
 
   testScript = ''

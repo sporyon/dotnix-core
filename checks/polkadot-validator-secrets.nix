@@ -33,6 +33,8 @@ inputs.nixpkgs.lib.nixos.runTest {
         pkgs.diffutils
         pkgs.systemd
       ];
+
+      system.stateVersion = "24.11";
     };
 
     # bob is a machine that starts with secrets.
@@ -55,6 +57,8 @@ inputs.nixpkgs.lib.nixos.runTest {
       environment.systemPackages = [
         pkgs.systemd
       ];
+
+      system.stateVersion = "24.11";
     };
   };
 
