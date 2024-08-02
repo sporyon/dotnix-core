@@ -44,6 +44,7 @@ pkgs.writers.writeDashBin "list-dependencies" ''
       ${pkgs.coreutils}/bin/cat
     fi |
     while read -r path; do
+      path=$(${pkgs.coreutils}/bin/readlink -f "$path")
       if path_has_been_seen "$path"; then
         continue
       else
