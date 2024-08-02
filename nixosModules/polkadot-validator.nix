@@ -82,7 +82,10 @@
     cfg = config.dotnix.polkadot-validator;
   in lib.mkIf cfg.enable {
     environment.systemPackages = [
-      (pkgs.writers.writeBashBin "polkadot-validator" ''
+      pkgs.polkadot-validator
+    ];
+    nixpkgs.overlays = [(self: super: {
+      polkadot-validator = self.writers.writeBashBin "polkadot-validator" ''
         # polkadot-validator - Management Utility for the Polkadot Validator
         #
         # SYNOPSIS
@@ -117,16 +120,16 @@
           # XXX `or null` is required here because there appears to be an
           # inconsistency evaluating overlays, causing checks to fail with
           # error: attribute 'polkadot-rpc' missing
-          (pkgs.polkadot-rpc or null)
+          (self.polkadot-rpc or null)
 
-          pkgs.coreutils
-          pkgs.curl
-          pkgs.gnused
-          pkgs.gnutar
-          pkgs.jq
-          pkgs.lz4
-          pkgs.systemd
-          pkgs.xxd
+          self.coreutils
+          self.curl
+          self.gnused
+          self.gnutar
+          self.jq
+          self.lz4
+          self.systemd
+          self.xxd
         ]}
         SNAPSHOT_DIR=${lib.escapeShellArg cfg.snapshotDirectory}
 
@@ -205,10 +208,11 @@
           journalctl --vacuum-time=2d
         }
         restart() {
+          systemctl stop polkadot-validator.service
           ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
             install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
           ''}
-          systemctl restart polkadot-validator.service
+          systemctl start polkadot-validator.service
         }
         stop() {
           systemctl stop polkadot-validator.service
@@ -296,7 +300,7 @@
           echo "$path"
         )
         print_setup_instructions() (
-          cat >&2 ${pkgs.writeText "setup.txt" ''
+          cat >&2 ${self.writeText "setup.txt" ''
             This function has no effect.
             The Polkadot validator has already been setup on this system.
 
@@ -305,7 +309,7 @@
           ''}
         )
         print_update_instructions() (
-          cat >&2 ${pkgs.writeText "update-instructions.txt" ''
+          cat >&2 ${self.writeText "update-instructions.txt" ''
             The Polkadot validator cannot be updated interactively.
             Instead, updated your Nix configuration and rebuild this system.
 
@@ -318,8 +322,8 @@
         )
 
         main "$@"
-      '')
-    ];
+      '';
+    })];
     systemd.services.polkadot-validator = {
       serviceConfig = {
         ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
@@ -383,32 +387,24 @@
       };
       path = [
         pkgs.coreutils
+        pkgs.polkadot-validator
         pkgs.systemd
       ];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writers.writeDash "polkadot-validator-orchestrator" ''
           if test -e "$KEY_FILE"; then
-            if systemctl is-active --quiet polkadot-validator.service; then
-              if ! sha1sum --check --status "$CHECKSUM_FILE"; then
-                sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
-                ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
-                  install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
-                ''}
-                systemctl restart polkadot-validator.service
-              else
-                : # nothing to do
-              fi
-            else
+            if ! systemctl is-active --quiet polkadot-validator.service ||
+               ! sha1sum --check --status "$CHECKSUM_FILE"
+            then
               sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
-              ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
-                install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
-              ''}
-              systemctl start polkadot-validator.service
+              polkadot-validator --restart
+            else
+              : # nothing to do
             fi
           else
             if systemctl is-active --quiet polkadot-validator.service; then
-              systemctl stop polkadot-validator.service
+              polkadot-validator --stop
               rm "$CHECKSUM_FILE"
             else
               : # nothing to do
