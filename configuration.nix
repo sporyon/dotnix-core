@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }: {
+{ config, inputs, lib, pkgs, ... }: {
   imports = [
     ./selinux.nix
   ];
@@ -31,6 +31,10 @@
   networking.firewall.allowedTCPPorts = [ 22 ];
   environment.systemPackages = with pkgs; [
     htop
+  ];
+
+  nixpkgs.overlays = [
+    inputs.self.overlays.default
   ];
 
   system.stateVersion = "24.11";
