@@ -22,9 +22,13 @@
     SELINUX=permissive
     SELINUXTYPE=strict
   '';
-  # policycoreutils is for load_policy, fixfiles, setfiles, setsebool, semodile, and sestatus.
   environment.systemPackages = [
+    pkgs.checkpolicy
+    pkgs.libselinux
+    pkgs.libsemanage
+    pkgs.libsepol
     pkgs.policycoreutils
+    pkgs.semodule-utils
   ];
   # build systemd with SELinux support so it loads policy at boot and supports file labelling
   systemd.package = pkgs.systemd.override { withSelinux = true; };
