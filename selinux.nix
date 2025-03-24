@@ -18,6 +18,10 @@
       '';
     }
   ];
+  environment.etc."selinux/config".text = ''
+    SELINUX=permissive
+    SELINUXTYPE=strict
+  '';
   # policycoreutils is for load_policy, fixfiles, setfiles, setsebool, semodile, and sestatus.
   environment.systemPackages = [
     pkgs.policycoreutils
