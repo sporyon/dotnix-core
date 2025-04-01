@@ -33,6 +33,12 @@
 
   environment.systemPackages = [
     pkgs.htop
+
+    # Utilities for working with SELinux interactively
+    pkgs.libselinux
+    pkgs.policycoreutils
+    pkgs.selinux.coreutils
+    pkgs.selinux.selinux-python
   ];
 
   nixpkgs.overlays = [
