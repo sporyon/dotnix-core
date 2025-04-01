@@ -1,6 +1,6 @@
 { config, inputs, lib, pkgs, ... }: {
   imports = [
-    ./selinux.nix
+    inputs.self.nixosModules.selinux
   ];
     # customize kernel version
 
