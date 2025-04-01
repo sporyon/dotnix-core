@@ -1,6 +1,22 @@
 { config, lib, pkgs, ... }: {
   options = {
     security.selinux.enable = lib.mkEnableOption "SELinux";
+
+    security.selinux.packages = lib.mkOption {
+      description = ''
+        Packages containing SELinux policy that should be installed.
+      '';
+      type = lib.types.listOf lib.types.package;
+      default = [];
+    };
+    security.selinux.refpolicy = lib.mkOption {
+      description = ''
+        SELinux reference policy that should be installed.
+      '';
+      type = lib.types.nullOr lib.types.package;
+      default = pkgs.selinux.refpolicy;
+      defaultText = lib.literalExpression "pkgs.selinux.refpolicy";
+    };
   };
   config = lib.mkIf config.security.selinux.enable {
     boot.kernelPatches = [
@@ -26,7 +42,92 @@
       SELINUXTYPE=strict
     '';
 
+    environment.etc."selinux/semanage.conf".text = ''
+      compiler-directory = ${pkgs.policycoreutils}/libexec/selinux/hll
+    '';
+
+    environment.etc."selinux/packages".text = ''
+      ${lib.concatMapStringsSep "\n"
+          (package: "${package.pname or package.name} ${package}")
+          config.security.selinux.packages
+      }
+    '';
+
+    security.selinux.packages =
+      lib.mkBefore
+        (lib.optional
+          (config.security.selinux.refpolicy != null)
+          config.security.selinux.refpolicy);
+
     systemd.package = pkgs.selinux.systemd;
+
+    systemd.services.selinux-modular-setup = {
+      description = "Modular SELinux Setup";
+      requiredBy = [
+        "sysinit.target"
+      ];
+      requires = [
+        "system.slice"
+      ];
+      before = [
+        "sysinit.target"
+      ];
+      after = [
+        "local-fs.target"
+        "system.slice"
+      ];
+      unitConfig = {
+        DefaultDependencies = false;
+      };
+      path = [
+        # XXX ${pkgs.policycoreutils}/bin/semodule assumes sefcontext_compile to be in $PATH
+        # TODO fix pkgs.policycoreutils instead of setting up path
+        pkgs.libselinux
+      ];
+      restartTriggers = [
+        config.environment.etc."selinux/packages".text
+      ];
+      serviceConfig = {
+        ExecStartPre = [
+          # ${pkgs.policycoreutils}/bin/semodule uses hardcoded /sbin-paths
+          # TODO fix pkgs.policycoreutils instead of setting up /sbin
+          (pkgs.writers.writeDash "selinux-sbin-setup" ''
+            set -efu
+            if test "$(readlink /sbin)" != run/sbin; then
+              rm -fR /sbin
+              ln -fns run/sbin /sbin
+            fi
+            install -D -t /run/sbin \
+                ${pkgs.libselinux}/bin/sefcontext_compile \
+                ${pkgs.policycoreutils}/bin/load_policy \
+                ${pkgs.policycoreutils}/bin/setfiles
+          '')
+        ];
+        ExecStart = pkgs.writers.writeDash "selinux-modular-setup" ''
+          set -efu
+
+          # Ensure module store exists
+          mkdir -p /var/lib/selinux/strict
+
+          # Install policies
+          cat /etc/selinux/packages |
+          while read -r name package; do
+            marker=/var/lib/selinux/strict/$name
+            if test "$package" != "$(readlink "$marker")";  then
+              echo "install $name $package" >&2
+              find "$package/share/selinux" -name \*.pp \
+                  -exec ${pkgs.policycoreutils}/bin/semodule --noreload --install {} +
+              ln -fns "$package" "$marker"
+            fi
+          done
+
+          # Load installed policy
+          ${pkgs.policycoreutils}/bin/semodule --reload
+        '';
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+    };
   };
 }
 
