@@ -25,6 +25,7 @@
       selinux.coreutils = final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; };
       selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
       selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy.nix {};
+      selinux.systemd = final.systemd.override { withSelinux = true; };
     };
 
     packages.x86_64-linux = {
