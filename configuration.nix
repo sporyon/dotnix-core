@@ -29,6 +29,8 @@
 
   networking.firewall.allowedTCPPorts = [ 22 ];
 
+  security.auditd.enable = true;
+
   security.selinux.enable = true;
   security.selinux.packages = [
     pkgs.dotnix-selinux-policy
@@ -38,6 +40,7 @@
     pkgs.htop
 
     # Utilities for working with SELinux interactively
+    pkgs.audit
     pkgs.libselinux
     pkgs.policycoreutils
     pkgs.selinux.coreutils
