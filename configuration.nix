@@ -1,8 +1,7 @@
-{ config, inputs, lib, pkgs, ... }: {
+{ inputs, pkgs, ... }: {
   imports = [
     inputs.self.nixosModules.selinux
   ];
-    # customize kernel version
 
   users.groups.admin = {};
   users.users = {
@@ -29,8 +28,9 @@
   };
 
   networking.firewall.allowedTCPPorts = [ 22 ];
-  environment.systemPackages = with pkgs; [
-    htop
+
+  environment.systemPackages = [
+    pkgs.htop
   ];
 
   nixpkgs.overlays = [
