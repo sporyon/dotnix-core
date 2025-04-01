@@ -29,6 +29,8 @@
 
   networking.firewall.allowedTCPPorts = [ 22 ];
 
+  security.selinux.enable = true;
+
   environment.systemPackages = [
     pkgs.htop
   ];
