@@ -22,6 +22,7 @@
       list-dependencies = final.callPackage ./pkgs/list-dependencies.nix {};
       polkadot = inputs.polkadot.packages.${final.system}.polkadot;
       polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
+      selinux.coreutils = final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; };
       selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
       selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy.nix {};
     };
