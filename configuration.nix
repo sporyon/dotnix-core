@@ -54,23 +54,28 @@
         pkgs.symlinkJoin {
           name = "dotnix-selinux-policy";
           paths = [
-            (pkgs.selinux.makeModule "dotnix/examplesecret" ''
-              module examplesecret 1.0;
+            (pkgs.selinux.makeModule "dotnix/examplesecret" {
+              fileContexts = ''
+                /examplesecret(/.*)? system_u:object_r:examplesecret_t
+              '';
+              typeEnforcement = ''
+                module examplesecret 1.0;
 
-              require {
-                class dir { getattr open read search };
-                class file { getattr open read relabelto };
-                class filesystem { associate };
-                type fs_t;
-                type unconfined_t;
-              }
+                require {
+                  class dir { getattr open read search };
+                  class file { getattr open read relabelto };
+                  class filesystem { associate };
+                  type fs_t;
+                  type unconfined_t;
+                }
 
-              type examplesecret_t;
+                type examplesecret_t;
 
-              allow examplesecret_t fs_t:filesystem associate;
-              allow unconfined_t examplesecret_t:dir { getattr open read search };
-              allow unconfined_t examplesecret_t:file { getattr open read relabelto };
-            '')
+                allow examplesecret_t fs_t:filesystem associate;
+                allow unconfined_t examplesecret_t:dir { getattr open read search };
+                allow unconfined_t examplesecret_t:file { getattr open read relabelto };
+              '';
+            })
           ];
         };
     })
@@ -85,8 +90,7 @@
         if ! test -e /examplesecret; then
           mkdir -m 0777 /examplesecret
           echo this is an examplesecret > /examplesecret/examplesecret.txt
-          ${pkgs.selinux.coreutils}/bin/chcon -t examplesecret_t /examplesecret
-          ${pkgs.selinux.coreutils}/bin/chcon -t examplesecret_t /examplesecret/examplesecret.txt
+          ${pkgs.policycoreutils}/bin/restorecon -r -v /examplesecret
         fi
       '';
       Type = "oneshot";
