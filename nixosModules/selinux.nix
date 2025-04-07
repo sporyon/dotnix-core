@@ -44,6 +44,20 @@
 
     environment.etc."selinux/semanage.conf".text = ''
       compiler-directory = ${pkgs.policycoreutils}/libexec/selinux/hll
+
+      [load_policy]
+      path = ${pkgs.policycoreutils}/bin/load_policy
+      [end]
+
+      [sefcontext_compile]
+      path = ${pkgs.libselinux}/bin/sefcontext_compile
+      args = $@
+      [end]
+
+      [setfiles]
+      path = ${pkgs.policycoreutils}/bin/setfiles
+      args = -q -c $@ $<
+      [end]
     '';
 
     environment.etc."selinux/packages".text = ''
@@ -79,30 +93,10 @@
       unitConfig = {
         DefaultDependencies = false;
       };
-      path = [
-        # XXX ${pkgs.policycoreutils}/bin/semodule assumes sefcontext_compile to be in $PATH
-        # TODO fix pkgs.policycoreutils instead of setting up path
-        pkgs.libselinux
-      ];
       restartTriggers = [
         config.environment.etc."selinux/packages".text
       ];
       serviceConfig = {
-        ExecStartPre = [
-          # ${pkgs.policycoreutils}/bin/semodule uses hardcoded /sbin-paths
-          # TODO fix pkgs.policycoreutils instead of setting up /sbin
-          (pkgs.writers.writeDash "selinux-sbin-setup" ''
-            set -efu
-            if test "$(readlink /sbin)" != run/sbin; then
-              rm -fR /sbin
-              ln -fns run/sbin /sbin
-            fi
-            install -D -t /run/sbin \
-                ${pkgs.libselinux}/bin/sefcontext_compile \
-                ${pkgs.policycoreutils}/bin/load_policy \
-                ${pkgs.policycoreutils}/bin/setfiles
-          '')
-        ];
         ExecStart = pkgs.writers.writeDash "selinux-modular-setup" ''
           set -efu
 
