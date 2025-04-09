@@ -25,6 +25,7 @@
       polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
       selinux.coreutils = final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; };
       selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
+      selinux.makePolicy = final.callPackage ./pkgs/selinux/make-policy.nix {};
       selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy.nix {};
       selinux.selinux-python = final.callPackage ./pkgs/selinux/selinux-python.nix {};
       selinux.systemd = final.systemd.override { withSelinux = true; };
