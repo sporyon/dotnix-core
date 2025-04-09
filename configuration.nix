@@ -81,17 +81,16 @@
     })
   ];
 
+  systemd.tmpfiles.rules = [
+    "d /examplesecret 0777 - - -"
+  ];
+
   systemd.services.dotnix-selinux-setup = {
     description = "Dotnix SELinux Setup";
-    requiredBy = [ "multi-user.target" ];
-    after = [ "selinux-modular-setup.service" ];
+    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       ExecStart = pkgs.writers.writeDash "dotnix-selinux-setup" ''
-        if ! test -e /examplesecret; then
-          mkdir -m 0777 /examplesecret
-          echo this is an examplesecret > /examplesecret/examplesecret.txt
-          ${pkgs.policycoreutils}/bin/restorecon -r -v /examplesecret
-        fi
+        echo this is an examplesecret > /examplesecret/examplesecret.txt
       '';
       Type = "oneshot";
       RemainAfterExit = true;
