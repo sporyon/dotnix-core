@@ -83,14 +83,35 @@
 
   systemd.tmpfiles.rules = [
     "d /examplesecret 0777 - - -"
+    "d /var/lib/private/polkadot-validator/* 0777 - - -"
+    # Todo search for more "d /var/lib/private/Todo 0777 - - -"
   ];
+
+#  systemd.services.dotnix-selinux-setup = {
+#    description = "Dotnix SELinux Setup";
+#    wantedBy = [ "multi-user.target" ];
+#    serviceConfig = {
+#      ExecStart = pkgs.writers.writeDash "dotnix-selinux-setup" ''
+#        echo this is an examplesecret > /examplesecret/examplesecret.txt
+#      '';
+#      Type = "oneshot";
+#      RemainAfterExit = true;
+#    };
+#  };
 
   systemd.services.dotnix-selinux-setup = {
     description = "Dotnix SELinux Setup";
     wantedBy = [ "multi-user.target" ];
+    requiredBy = [ "pokadot-validator.service" ];
+    before = [ "polkadot-validator.service"];
     serviceConfig = {
       ExecStart = pkgs.writers.writeDash "dotnix-selinux-setup" ''
         echo this is an examplesecret > /examplesecret/examplesecret.txt
+        mkdir --context --mode=0700 --verbose /var/lib/private/polkadot-validator/*
+        mkdir --context --mode=0700 --verbose /var/lib/private/polkadot/*
+        # Todo how do i find the rest
+        chown nobody:nogroup /var/lib/private/polkadot-validator/*
+        chown polkadot:polkadot /var/lib/private/polkadot-validator/*
       '';
       Type = "oneshot";
       RemainAfterExit = true;
