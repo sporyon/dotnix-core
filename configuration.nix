@@ -33,19 +33,19 @@
   security.auditd.enable = true;
 
   security.selinux.enable = true;
-  security.selinux.packages = [
-    (pkgs.dotnix.makeModule "dotnix/polkadot" {
-      typeEnforcement = '' 
-        module polkadot 1.0;
+# security.selinux.packages = [
+#   (pkgs.dotnix.makeModule "dotnix/polkadot-validator" {
+#     typeEnforcement = '' 
+#       module polkadot 1.0;
+#
+#       require {
+#         class dir [ open search};
+#         }
 
-        require {
-          class dir [ open search};
-          }
-
-          type polkadot_validator_service_t;
-          '';
-        }) 
-    ];
+#         type polkadot_validator_service_t;
+#         '';
+#        }) 
+#    ];
 
   environment.systemPackages = [
     pkgs.htop
@@ -74,17 +74,8 @@
             (pkgs.selinux.makeModule "dotnix/examplesecret" {
               fileContexts = ''
                 /examplesecret(/.*)? system_u:object_r:examplesecret_t
-                /root/polkadot-validator.node_key system_u:object_r:polkadot-validator.service polkadot-validator.node_key
-                /var/lib/polkadot-validator(/.*)?  system_u:object_r:var_lib_t
-                /var/lib/private/polkadot-validator(/.*)? system_u:object_r:var_lib_t
-
-                /root/polkadot-validator.node_key system_u:object_r:polkadot-validator-orchestrator.service
-                /var/lib/private/polkadot-validator(/.*)? system_u:object_r:polkadot-validator-orchestrator.service
-                /var/lib/polkadot-validator(/.*)? system_u:object_r:polkadot-validator-orchestrator.service
- 
-                /root/polkadot-validator.node_key system_u:object_r:polkadot-validator-orchestrator-starter.service
-                /var/lib/private/polkadot-validator(/.*)? system_u:object_r:polkadot-validator-orchestrator-starter.service
-                /var/lib/polkadot-validator(/.*)? system_u:object_r:polkadot-validator-orchestrator-starter.service
+                /root/secrets(/.*)? system_u:object_r:input_secrets_t
+                /var/lib/private/polkadot-validator(/.*)? system_u:object_r:polkadot_validator_state_t
               '';
               typeEnforcement = ''
                 module examplesecret 1.0;
@@ -112,13 +103,7 @@
   systemd.tmpfiles.rules = [
     "d /examplesecret 0777 - - -"
     "d /var/lib/private/polkadot-validator/ 0700 polkadot polkadot"
-    " /root/polkadot-validator.node_key 0700 polkadot polkadot"
-    "d /var/lib/polkadot-validator/ 0700 polkadot polkadot"
-    "d /run/current-system/sw/bin/polkadot 0700 polkadot polkadot"
-    "d /run/current-system/sw/bin/polkadot-validator 0700 polkadot polkadot"
-    "d /run/current-system/sw/bin/polkadot-prepare-worker 0700 polkadot polkadot"
-    "d /run/current-system/sw/bin/polkadot-execute-worker 0700 polkadot polkadot"
-    # Todo search for more "d /var/lib/private/Todo 0777 - - -"
+    "d /root/secrets 0700 polkadot polkadot"
   ];
 
 #  systemd.services.dotnix-selinux-setup = {
@@ -141,17 +126,6 @@
     serviceConfig = {
       ExecStart = pkgs.writers.writeDash "dotnix-selinux-setup" ''
         echo this is an examplesecret > /examplesecret/examplesecret.txt
-        mkdir --context --mode=0700 --verbose /var/lib/private/polkadot-validator/
-        mkdir --context --mode=0700 --verbose /var/lib/private/polkadot-validator/
-        mkdir --context --mode=0700 --verbose /root/polkadot-validator.node_key
-        mkdir --context --mode=0700 --verbose /var/lib/polkadot-validator/
-        mkdir --context --mode=0700 --verbose /run/current-system/sw/bin/polkadot/
-      
-        chown nobody:nogroup /var/lib/private/polkadot-validator/
-        chown nobody:nogroup /var/lib/private/polkadot-validator/
-        chown polkadot:polkadot /root/polkadot-validator.node_key
-        chown polkadot:polkadot /var/lib/polkadot-validator/
-        chown polkadot:polkadot /run/current-system/sw/bin/polkadot/
       '';
       Type = "oneshot";
       RemainAfterExit = true;
