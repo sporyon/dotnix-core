@@ -1,6 +1,6 @@
 # polkadot-validator-selinux tests
 #
-# This test checks whether a user with sudo privileges can touch secrets, if the validator has network access.
+# This test checks whether users can read secrets.
 #
 
 { inputs, system }:
@@ -45,17 +45,23 @@ inputs.nixpkgs.lib.nixos.runTest {
     alice.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")
     alice.wait_until_succeeds("rpc system_name")
 
+    # Test if the polkadot validator service is active and running
+    alice.succeed("systemctl is-active polkadot-validator")
+    alice.wait_unitl_succeeds("systemctl status polkadot-validator -n 100")
+
     # Test if validator secrets are protected
+    alice.succeed("cat /#Todo add keylocations")
     alice.succeed("setenforce 1")
-    alice.failed("sudo cat /#Todo add keylocations")
+    alice.failed("cat /#Todo add keylocations")
 
-    # Test if the Validator can communicate over the network
-    alice.succeed("curl http://localhost:9944")
+    # Test if the the polkadot-validator service can read machine secrets
+    alice.succeed("! sudo -u polkadot-validator cat /etc/shadow")
+    # Todo add keylocation in the new tests as well 
+    # Test if root can write the node key but not read it 
+    alice.succeed("echo 'test' > /path/to/node_key && ! sudo cat /path/to/node_key")
 
-    # Test if the Bootnode can communicate over the network
-    alice.succeed("curl http://localhost:30310")
-    alice.succeed("curl http://localhost:30311")
-    alice.succeed("curl http://localhost:30312")
-
+    # Test if systemd can read the node key but not write it 
+    alice.succeed("systemd-ask-password --no-tty --quiet --print-secret < /path/to/validator_key")
+    alice.succeed("sudo -u polkadot-validator bash -c 'echo test > /path/to/node_key'")
   '';
 }
