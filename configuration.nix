@@ -1,6 +1,7 @@
-{ inputs, pkgs, ... }: {
+{ inputs, pkgs, config, modulesPath, lib, ... }: {
   imports = [
     inputs.self.nixosModules.selinux
+    inputs.self.nixosModules.polkadot-validator
   ];
 
   users.groups.admin = {};
@@ -43,12 +44,11 @@
 
           type polkadot_validator_service_t;
           '';
-        };
-      ];
+        }) 
+    ];
 
   environment.systemPackages = [
     pkgs.htop
-
     # Utilities for working with SELinux interactively
     pkgs.audit
     pkgs.libselinux
@@ -56,7 +56,14 @@
     pkgs.selinux.coreutils
     pkgs.selinux.selinux-python
   ];
-
+  # Validator configuration.
+  dotnix.polkadot-validator.enable = true;
+  dotnix.polkadot-validator.name = "sporyon-dotnix-westend";
+  dotnix.polkadot-validator.chain = "westend";
+  dotnix.polkadot-validator.extraArgs = [
+      "--db-storage-threshold=0"
+    ];
+ 
   nixpkgs.overlays = [
     inputs.self.overlays.default
     (self: super: {
