@@ -62,6 +62,6 @@ inputs.nixpkgs.lib.nixos.runTest {
 
     # Test if systemd can read the node key but not write it 
     alice.succeed("systemd-ask-password --no-tty --quiet --print-secret < /path/to/validator_key")
-    alice.succeed("sudo -u polkadot-validator bash -c 'echo test > /path/to/node_key'")
+    alice.succeed("! sudo -u polkadot-validator bash -c 'echo test > /path/to/node_key'")
   '';
 }
