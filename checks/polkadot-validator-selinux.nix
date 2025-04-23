@@ -50,18 +50,18 @@ inputs.nixpkgs.lib.nixos.runTest {
     alice.wait_unitl_succeeds("systemctl status polkadot-validator -n 100")
 
     # Test if validator secrets are protected
-    alice.succeed("cat /#Todo add keylocations")
+    alice.succeed("cat /root/node.key")
     alice.succeed("setenforce 1")
-    alice.failed("cat /#Todo add keylocations")
+    alice.failed("cat /root/node.key")
 
     # Test if the the polkadot-validator service can read machine secrets
     alice.succeed("! sudo -u polkadot-validator cat /etc/shadow")
     # Todo add keylocation in the new tests as well 
     # Test if root can write the node key but not read it 
-    alice.succeed("echo 'test' > /path/to/node_key && ! sudo cat /path/to/node_key")
+    alice.succeed("echo 'test' > /path/to/node_key && ! sudo cat /root/node.key")
 
     # Test if systemd can read the node key but not write it 
-    alice.succeed("systemd-ask-password --no-tty --quiet --print-secret < /path/to/validator_key")
-    alice.succeed("! sudo -u polkadot-validator bash -c 'echo test > /path/to/node_key'")
+    alice.succeed("systemd-ask-password --no-tty --quiet --print-secret < /root/node.key")
+    alice.succeed("! sudo -u polkadot-validator bash -c 'echo test > /root/node.key'")
   '';
 }
