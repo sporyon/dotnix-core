@@ -33,19 +33,6 @@
   security.auditd.enable = true;
 
   security.selinux.enable = true;
-# security.selinux.packages = [
-#   (pkgs.dotnix.makeModule "dotnix/polkadot-validator" {
-#     typeEnforcement = '' 
-#       module polkadot 1.0;
-#
-#       require {
-#         class dir [ open search};
-#         }
-
-#         type polkadot_validator_service_t;
-#         '';
-#        }) 
-#    ];
 
   environment.systemPackages = [
     pkgs.htop
@@ -106,17 +93,6 @@
     "d /root/secrets 0700 polkadot polkadot"
   ];
 
-#  systemd.services.dotnix-selinux-setup = {
-#    description = "Dotnix SELinux Setup";
-#    wantedBy = [ "multi-user.target" ];
-#    serviceConfig = {
-#      ExecStart = pkgs.writers.writeDash "dotnix-selinux-setup" ''
-#        echo this is an examplesecret > /examplesecret/examplesecret.txt
-#      '';
-#      Type = "oneshot";
-#      RemainAfterExit = true;
-#    };
-#  };
 
   systemd.services.dotnix-selinux-setup = {
     description = "Dotnix SELinux Setup";
