@@ -16,6 +16,10 @@
         pkgs.polkadot-rpc
       ];
 
+      systemd.tmpfiles.rules = [
+        "d /var/lib/private/polkadot-validator 0700 - -"
+      ];
+
       systemd.services.polkadot-validator.serviceConfig = {
         SELinuxContext = "system_u:system_r:polkadot_validator_service_t:s0";
         ExecStart = lib.mkForce (pkgs.writers.writeDash "test" ''
@@ -26,6 +30,9 @@
       };
       security.selinux.packages = [
         (pkgs.selinux.makeModule "dotnix/polkadot" {
+          fileContexts = ''
+            /var/lib/private/polkadot-validator(/.*)? system_u:object_r:polkadot_validator_state_t
+          '';
           typeEnforcement = ''
             module polkadot 1.0;
 
@@ -34,6 +41,7 @@
             }
 
             type polkadot_validator_service_t;
+            type polkadot_validator_state_t;
           '';
         })
       ];
