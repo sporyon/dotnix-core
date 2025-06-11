@@ -1,6 +1,43 @@
 { inputs, pkgs, ... }: {
   imports = [
     inputs.self.nixosModules.selinux
+    inputs.self.nixosModules.polkadot-validator
+    ({ config, lib, pkgs, ... }: {
+      # Validator configuration.
+      dotnix.polkadot-validator.enable = true;
+      dotnix.polkadot-validator.name = "sporyon-dotnix-westend2";
+      dotnix.polkadot-validator.chain = "westend";
+      dotnix.polkadot-validator.extraArgs = [
+        "--db-storage-threshold=0"
+      ];
+
+      environment.systemPackages = [
+        config.dotnix.polkadot-validator.package
+        pkgs.polkadot-rpc
+      ];
+
+      systemd.services.polkadot-validator.serviceConfig = {
+        SELinuxContext = "system_u:system_r:polkadot_validator_service_t:s0";
+        ExecStart = lib.mkForce (pkgs.writers.writeDash "test" ''
+          ${lib.getExe' pkgs.selinux.coreutils "id"}
+          ${lib.getExe' pkgs.selinux.coreutils "ls"} -laZ "$STATE_DIRECTORY"
+          ${lib.getExe' pkgs.selinux.coreutils "sleep"} infinity
+        '');
+      };
+      security.selinux.packages = [
+        (pkgs.selinux.makeModule "dotnix/polkadot" {
+          typeEnforcement = ''
+            module polkadot 1.0;
+
+            require {
+              class dir { open search };
+            }
+
+            type polkadot_validator_service_t;
+          '';
+        })
+      ];
+    })
   ];
 
   users.groups.admin = {};
