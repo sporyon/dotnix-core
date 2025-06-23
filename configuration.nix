@@ -36,10 +36,6 @@
           typeEnforcement = ''
             module polkadot 1.0;
 
-            require {
-              class dir { open search };
-            }
-
             type polkadot_validator_service_t;
             type polkadot_validator_state_t;
           '';
