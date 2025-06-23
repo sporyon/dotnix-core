@@ -36,7 +36,15 @@
           typeEnforcement = ''
             module polkadot 1.0;
 
+            require {
+              attribute domain;
+              role system_r;
+            }
+
             type polkadot_validator_service_t;
+            typeattribute polkadot_validator_service_t domain;
+            role system_r types polkadot_validator_service_t;
+
             type polkadot_validator_state_t;
           '';
         })
