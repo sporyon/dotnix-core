@@ -21,7 +21,7 @@
       ];
 
       systemd.services.polkadot-validator.serviceConfig = {
-        SELinuxContext = "system_u:system_r:polkadot_validator_service_t:s0";
+        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
         ExecStart = lib.mkForce (pkgs.writers.writeDash "test" ''
           ${lib.getExe' pkgs.selinux.coreutils "id"}
           ${lib.getExe' pkgs.selinux.coreutils "ls"} -laZ "$STATE_DIRECTORY"
