@@ -27,6 +27,7 @@
       selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
       selinux.makePolicy = final.callPackage ./pkgs/selinux/make-policy.nix {};
       selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy.nix {};
+      selinux.secilc = final.callPackage ./pkgs/selinux/secilc.nix {};
       selinux.selinux-python = final.callPackage ./pkgs/selinux/selinux-python.nix {};
       selinux.systemd = final.systemd.override { withSelinux = true; };
     };
