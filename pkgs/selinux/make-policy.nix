@@ -59,7 +59,7 @@ pkgs.runCommand name {
 
   ${lib.concatMapStringsSep "\n" (package: /* TODO all in one xargs */ ''
     echo Installing package ${package} >&2
-    find ${package}/share/selinux -name \*.pp |
+    find ${package}/share/selinux -name \*.cil -o -name \*.pp |
     xargs --no-run-if-empty \
         ${pkgs.proot}/bin/proot \
             -0 \
