@@ -42,6 +42,9 @@
 
             (context polkadot_validator_context (system_u object_r polkadot_validator_state_t (systemlow systemlow)))
             (filecon "/var/lib/private/polkadot-validator(/.*)?" any polkadot_validator_context)
+
+            ; This is used by libp2p-mdns (port 5353, UDP)
+            (allow polkadot_validator_service_t howl_port_t (udp_socket (name_bind)))
           '';
         })
       ];
