@@ -29,23 +29,19 @@
         '');
       };
       security.selinux.packages = [
-        (pkgs.selinux.makeModule "dotnix/polkadot" {
-          fileContexts = ''
-            /var/lib/private/polkadot-validator(/.*)? system_u:object_r:polkadot_validator_state_t
-          '';
-          typeEnforcement = ''
-            module polkadot 1.0;
+        (pkgs.writeTextFile {
+          name = "polkadot-selinux-module";
+          destination = "/share/selinux/modules/polkadot.cil";
+          text = ''
+            (type polkadot_validator_service_t)
+            (typeattributeset domain (polkadot_validator_service_t))
+            (roletype system_r polkadot_validator_service_t)
 
-            require {
-              attribute domain;
-              role system_r;
-            }
+            (type polkadot_validator_state_t)
+            (roletype object_r polkadot_validator_state_t)
 
-            type polkadot_validator_service_t;
-            typeattribute polkadot_validator_service_t domain;
-            role system_r types polkadot_validator_service_t;
-
-            type polkadot_validator_state_t;
+            (context polkadot_validator_context (system_u object_r polkadot_validator_state_t (systemlow systemlow)))
+            (filecon "/var/lib/private/polkadot-validator(/.*)?" any polkadot_validator_context)
           '';
         })
       ];
