@@ -17,7 +17,11 @@ stdenv.mkDerivation rec {
     pkgs.python3
   ];
 
-  patchPhase = ''
+  patches = [
+    ./can_exec_unlabeled.patch
+  ];
+
+  prePatch = ''
     sed -i 's@^prefix := $(DESTDIR)/usr$@prefix := '"$out"'@' Makefile
   '';
 

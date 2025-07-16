@@ -332,6 +332,7 @@
         text = /* cil */ ''
           (type polkadot_validator_service_t)
           (typeattributeset domain (polkadot_validator_service_t))
+          (typeattributeset can_exec_unlabeled (polkadot_validator_service_t))
           (roletype system_r polkadot_validator_service_t)
 
           (type polkadot_validator_state_t)
