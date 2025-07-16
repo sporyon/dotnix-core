@@ -325,6 +325,48 @@
         main "$@"
       '';
     })];
+    security.selinux.packages = [
+      (pkgs.writeTextFile {
+        name = "polkadot-selinux-module";
+        destination = "/share/selinux/modules/polkadot.cil";
+        text = /* cil */ ''
+          (type polkadot_validator_service_t)
+          (typeattributeset domain (polkadot_validator_service_t))
+          (roletype system_r polkadot_validator_service_t)
+
+          (type polkadot_validator_state_t)
+          (roletype object_r polkadot_validator_state_t)
+
+          (context polkadot_validator_context (system_u object_r polkadot_validator_state_t (systemlow systemlow)))
+          (filecon "/var/lib/private/polkadot-validator(/.*)?" any polkadot_validator_context)
+
+          (type polkadot_p2p_port_t)
+          (roletype object_r polkadot_p2p_port_t)
+          (portcon tcp 30333 (system_u object_r polkadot_p2p_port_t (systemlow systemlow)))
+
+          (type polkadot_prometheus_port_t)
+          (roletype object_r polkadot_prometheus_port_t)
+          (portcon tcp 9615 (system_u object_r polkadot_prometheus_port_t (systemlow systemlow)))
+
+          (type polkadot_rpc_port_t)
+          (roletype object_r polkadot_rpc_port_t)
+          (portcon tcp 9944 (system_u object_r polkadot_rpc_port_t (systemlow systemlow)))
+
+          ; Allow connecting to boot nodes.
+          (allow polkadot_validator_service_t port_type (tcp_socket (name_connect)))
+
+          ; This is used for mDNS (port 5353, UDP)
+          (allow polkadot_validator_service_t howl_port_t (udp_socket (name_bind)))
+          ; Ideally we would like to use
+          ;   (portcon udp (32768 60999) (system_u object_r ephemeral_port_t (systemlow systemlow)))
+          ;   (allow polkadot_validator_service_t ephemeral_port_t (udp_socket (name_bind)))
+          ; but even when defining the ephemeral port range, the ports used by mDNS unreserved_port_t.
+          ; This is probably due to some quirk in refpolicy, but the exact cause hasn't been determined
+          ; as its not really a security concern to allow polkadot to listen to any unreserved port.
+          (allow polkadot_validator_service_t unreserved_port_t (udp_socket (name_bind)))
+        '';
+      })
+    ];
     systemd.services.polkadot-validator = {
       serviceConfig = {
         ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
@@ -342,6 +384,7 @@
         DynamicUser = true;
         User = "polkadot";
         Group = "polkadot";
+        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
         Restart = "always";
         RestartSec = 120;
         CapabilityBoundingSet = "";
@@ -375,6 +418,9 @@
         Documentation = "https://github.com/paritytech/polkadot";
       };
     };
+    systemd.tmpfiles.rules = [
+      "d /var/lib/private/polkadot-validator 0700 - -"
+    ];
     systemd.paths.polkadot-validator-orchestrator = {
       wantedBy = [
         "multi-user.target"
