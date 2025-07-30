@@ -134,7 +134,7 @@
         SNAPSHOT_DIR=${lib.escapeShellArg cfg.snapshotDirectory}
 
         main() {
-          if test "$(id -u)" != 0; then
+          if test "$UID" != 0; then
             echo "$0: error: this command must be run as root" >&2
             exit 1
           fi
