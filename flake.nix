@@ -32,12 +32,7 @@
       selinux.systemd = final.systemd.override { withSelinux = true; };
     };
 
-    legacyPackages.x86_64-linux = {
-      docker = import ./docker.nix {
-        inherit inputs;
-        system = "x86_64-linux";
-      };
-    } //
+    legacyPackages.x86_64-linux =
       inputs.self.overlays.default
         inputs.nixpkgs.legacyPackages.x86_64-linux
         inputs.nixpkgs.legacyPackages.x86_64-linux;
@@ -47,12 +42,6 @@
         system = "x86_64-linux";
         modules = [
           ./example.nix
-
-          # Quirks needed so nix flake check doesn't bail
-          {
-            fileSystems."/".device = "/dummy";
-            boot.loader.grub.devices = [ "/dummy" ];
-          }
         ];
         specialArgs = {
           inherit inputs;

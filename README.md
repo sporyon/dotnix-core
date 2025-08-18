@@ -134,31 +134,35 @@ E.g. to allow rerunning `checks.x86_64-linux.polkadot-validator-two-node-network
 
 ### Docker
 
-Building the NixOS tarball to be used in docker
+Build the NixOS tarball to be used in Docker:
 
-    nix build .#docker
+    nix build .#nixosConfigurations.example.config.system.build.docker
 
-To test in docker download the [tarball](https://sporyon.io/wp-content/releases/nixos-system-x86_64-linux.tar.xz)
+_Note: Instead of building it yourself, you can also be download the
+[tarball](https://sporyon.io/wp-content/releases/nixos-system-x86_64-linux.tar.xz)
+(sha1sum: 0361767ed060a628728acfdcfd8bdf7e6a34faeb)._
 
-sha1sum: 0361767ed060a628728acfdcfd8bdf7e6a34faeb
+_The following step assumes that the tarball is called `./result`.  This is the
+default location when building it.  When downloading, use the appropriate path
+instead._
 
-Importing the NixOS tarball into Docker, creating an image named dotnix-docker
+Load the NixOS tarball into Docker, creating an image named `dotnix-docker`:
 
-    docker import result/tarball/nixos-system-x86_64-linux.tar.xz dotnix-docker
+    docker load < result
 
-Running the dotnix-docker image with systemd, starting an interactive session
+Run `dotnix-docker` to boot a VM and provide an interactive shell for exploring all features:
 
-    docker run --privileged -it dotnix-docker /init
+    docker run --privileged --rm -it dotnix-docker
 
-Provide a node key to start the validator
+Provide a node key to start the validator:
 
     polkadot key generate-node-key | polkadot-validator --set-node-key
 
 If everything succeeded, the validator should now show up at
 [Polkadot telemtery for westend](https://telemetry.polkadot.io/#list/0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e).
-Search for _dotnix-docker_ there.
+Search for _sporyon-dotnix-westend2_ there.
 
-Additional commands to check the running validator
+Additional commands to check the running validator:
 
     systemctl status polkadot-validator.service
     journalctl -n 1000 -f -u polkadot-validator.service
