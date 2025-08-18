@@ -1,7 +1,7 @@
-{ inputs, pkgs, ... }: {
+{ inputs, lib, pkgs, ... }: {
   imports = [
-    inputs.self.nixosModules.selinux
     inputs.self.nixosModules.polkadot-validator
+    inputs.self.nixosModules.selinux
     ({ config, lib, pkgs, ... }: {
       # Validator configuration.
       dotnix.polkadot-validator.enable = true;
@@ -44,16 +44,9 @@
 
   networking.firewall.allowedTCPPorts = [ 22 ];
 
-  security.auditd.enable = true;
-
   security.selinux.enable = true;
-  security.selinux.packages = [
-    pkgs.dotnix-selinux-policy
-  ];
 
   environment.systemPackages = [
-    pkgs.htop
-
     # Utilities for working with SELinux interactively
     pkgs.audit
     pkgs.libselinux
@@ -64,54 +57,7 @@
 
   nixpkgs.overlays = [
     inputs.self.overlays.default
-    (self: super: {
-      dotnix-selinux-policy =
-        pkgs.symlinkJoin {
-          name = "dotnix-selinux-policy";
-          paths = [
-            (pkgs.selinux.makeModule "dotnix/examplesecret" {
-              fileContexts = ''
-                /examplesecret(/.*)? system_u:object_r:examplesecret_t
-              '';
-              typeEnforcement = ''
-                module examplesecret 1.0;
-
-                require {
-                  class dir { getattr open read search };
-                  class file { getattr open read relabelto };
-                  class filesystem { associate };
-                  type fs_t;
-                  type unconfined_t;
-                }
-
-                type examplesecret_t;
-
-                allow examplesecret_t fs_t:filesystem associate;
-                allow unconfined_t examplesecret_t:dir { getattr open read search };
-                allow unconfined_t examplesecret_t:file { getattr open read relabelto };
-              '';
-            })
-          ];
-        };
-    })
   ];
-
-  systemd.tmpfiles.rules = [
-    "d /examplesecret 0777 - - -"
-  ];
-
-  systemd.services.dotnix-selinux-setup = {
-    description = "Dotnix SELinux Setup";
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      ExecStart = pkgs.writers.writeDash "dotnix-selinux-setup" ''
-        echo this is an examplesecret > /examplesecret/examplesecret.txt
-      '';
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-  };
 
   system.stateVersion = "24.11";
 }
-
