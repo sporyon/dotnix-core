@@ -18,6 +18,8 @@ stdenv.mkDerivation rec {
   ];
 
   patches = [
+    # As files in the Nix store cannot be labeled, we're adding the
+    # can_exec_unlabeled attribute that allows executing any file.
     ./can_exec_unlabeled.patch
   ];
 
