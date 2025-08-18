@@ -42,18 +42,15 @@
         inputs.nixpkgs.legacyPackages.x86_64-linux
         inputs.nixpkgs.legacyPackages.x86_64-linux;
 
-
     nixosConfigurations.selinux-vm =
-      # test is a hostname for our machine
       inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
-          ./configuration.nix
+          ./selinux-vm.nix
         ];
         specialArgs = {
           inherit inputs;
         };
       };
-
   };
 }
