@@ -32,7 +32,7 @@
       selinux.systemd = final.systemd.override { withSelinux = true; };
     };
 
-    packages.x86_64-linux = {
+    legacyPackages.x86_64-linux = {
       docker = import ./docker.nix {
         inherit inputs;
         system = "x86_64-linux";
