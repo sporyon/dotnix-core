@@ -42,11 +42,11 @@
         inputs.nixpkgs.legacyPackages.x86_64-linux
         inputs.nixpkgs.legacyPackages.x86_64-linux;
 
-    nixosConfigurations.selinux-vm =
+    nixosConfigurations.example =
       inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
-          ./selinux-vm.nix
+          ./example.nix
 
           # Quirks needed so nix flake check doesn't bail
           {
