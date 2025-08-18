@@ -47,6 +47,12 @@
         system = "x86_64-linux";
         modules = [
           ./selinux-vm.nix
+
+          # Quirks needed so nix flake check doesn't bail
+          {
+            fileSystems."/".device = "/dummy";
+            boot.loader.grub.devices = [ "/dummy" ];
+          }
         ];
         specialArgs = {
           inherit inputs;
