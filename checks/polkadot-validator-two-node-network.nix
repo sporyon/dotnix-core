@@ -15,6 +15,7 @@ inputs.nixpkgs.lib.nixos.runTest {
     inputs.nixpkgs.lib.genAttrs ["alice" "bob"] (name: { config, pkgs, ... }: {
       imports = [
         inputs.self.nixosModules.polkadot-validator
+        inputs.self.nixosModules.selinux
       ];
 
       # Validator configuration.

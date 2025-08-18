@@ -13,6 +13,7 @@ inputs.nixpkgs.lib.nixos.runTest {
   nodes.alice = { config, pkgs, ... }: {
     imports = [
       inputs.self.nixosModules.polkadot-validator
+      inputs.self.nixosModules.selinux
     ];
 
     # Validator configuration.
