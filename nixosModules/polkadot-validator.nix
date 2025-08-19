@@ -253,7 +253,7 @@
                   return 1
               esac
               tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
-              chown -R polkadot:polkadot "$chain_path"/snapshot/db
+              chown -R nobody:nogroup "$chain_path"/snapshot/db
               (
                 trap restart EXIT
                 stop
