@@ -41,6 +41,7 @@ inputs.nixpkgs.lib.nixos.runTest {
 
   testScript = ''
     start_all()
+    alice.wait_until_succeeds("systemctl is-active multi-user.target")
 
     # Set some generated node keys to start the validator.
     alice.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")

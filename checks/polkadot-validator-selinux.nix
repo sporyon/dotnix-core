@@ -43,6 +43,7 @@ inputs.nixpkgs.lib.nixos.runTest {
 
   testScript = ''
     start_all()
+    alice.wait_until_succeeds("systemctl is-active multi-user.target")
 
     # The test systems starts with permissive SELinux mode.
     # The initial context is system_u:system_r:init_t (i.e. same as systemd),

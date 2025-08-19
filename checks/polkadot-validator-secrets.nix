@@ -65,6 +65,10 @@ inputs.nixpkgs.lib.nixos.runTest {
   };
 
   testScript = ''
+    start_all()
+    alice.wait_until_succeeds("systemctl is-active multi-user.target")
+    bob.wait_until_succeeds("systemctl is-active multi-user.target")
+
     # Ensure the validator did't start without secrets.
     alice.fail("systemctl is-active polkadot-validator.service")
 
