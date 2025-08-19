@@ -19,7 +19,7 @@ inputs.nixpkgs.lib.nixos.runTest {
     # Validator configuration.
     dotnix.polkadot-validator.enable = true;
     dotnix.polkadot-validator.name = "alice";
-    dotnix.polkadot-validator.chain = "dev";
+    dotnix.polkadot-validator.chain = "westend";
     dotnix.polkadot-validator.extraArgs = [
       "--db-storage-threshold=0"
     ];
@@ -49,6 +49,6 @@ inputs.nixpkgs.lib.nixos.runTest {
     alice.succeed("polkadot-validator --backup-keystore > /tmp/backup-path")
     alice.succeed("mkdir /tmp/testdir")
     alice.succeed("tar --use-compress-program=lz4 -C /tmp/testdir -x -f $(cat /tmp/backup-path)")
-    alice.succeed("diff -ru /var/lib/polkadot-validator/chains/rococo_dev/keystore /tmp/testdir/keystore || test $? = 1")
+    alice.succeed("diff -ru /var/lib/polkadot-validator/chains/westend2/keystore /tmp/testdir/keystore || test $? = 1")
   '';
 }

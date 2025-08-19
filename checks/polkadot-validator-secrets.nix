@@ -22,7 +22,7 @@ inputs.nixpkgs.lib.nixos.runTest {
       # Validator configuration.
       dotnix.polkadot-validator.enable = true;
       dotnix.polkadot-validator.name = "alice";
-      dotnix.polkadot-validator.chain = "dev";
+      dotnix.polkadot-validator.chain = "westend";
       dotnix.polkadot-validator.extraArgs = [
         "--db-storage-threshold=0"
       ];
@@ -48,7 +48,7 @@ inputs.nixpkgs.lib.nixos.runTest {
       # Validator configuration.
       dotnix.polkadot-validator.enable = true;
       dotnix.polkadot-validator.name = "bob";
-      dotnix.polkadot-validator.chain = "dev";
+      dotnix.polkadot-validator.chain = "westend";
       dotnix.polkadot-validator.extraArgs = [
         "--db-storage-threshold=0"
       ];
