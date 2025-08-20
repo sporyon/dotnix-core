@@ -36,6 +36,7 @@
 
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
+        boot.growPartition = false;
         virtualisation = {
           cores = 3;
           graphics = false;
