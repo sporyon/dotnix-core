@@ -29,7 +29,11 @@
       selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy {};
       selinux.secilc = final.callPackage ./pkgs/selinux/secilc.nix {};
       selinux.selinux-python = final.callPackage ./pkgs/selinux/selinux-python.nix {};
-      selinux.systemd = final.systemd.override { withSelinux = true; };
+      selinux.systemd = (final.systemd.override { withSelinux = true; }).overrideAttrs (old: {
+        patches = old.patches or [] ++ [
+          ./pkgs/selinux/systemd/selinux-label.patch
+        ];
+      });
     };
 
     legacyPackages.x86_64-linux =
