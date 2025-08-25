@@ -24,6 +24,11 @@
       polkadot = inputs.polkadot.packages.${final.system}.polkadot;
       polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
       selinux.coreutils = final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; };
+      selinux.linux-pam = final.linux-pam.overrideAttrs (old: {
+        buildInputs = old.buildInputs or [] ++ [
+          final.libselinux
+        ];
+      });
       selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
       selinux.makePolicy = final.callPackage ./pkgs/selinux/make-policy.nix {};
       selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy {};
