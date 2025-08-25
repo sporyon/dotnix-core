@@ -64,7 +64,7 @@
 
     snapshotDirectory = lib.mkOption {
       type = lib.types.path;
-      default = "/root";
+      default = "/var/snapshots";
       description = ''
         Path to the directory where snapshots should be created.
       '';
@@ -117,10 +117,12 @@
         CHAIN=${lib.escapeShellArg cfg.chain}
         KEY_FILE=${lib.escapeShellArg cfg.keyFile}
         PATH=${lib.makeBinPath [
-          # XXX `or null` is required here because there appears to be an
-          # inconsistency evaluating overlays, causing checks to fail with
-          # error: attribute 'polkadot-rpc' missing
-          (self.polkadot-rpc or null)
+          # XXX `or pkgs.emptyDirectory` is required here because there appears
+          # to be an inconsistency evaluating overlays, causing checks to fail
+          # with error: attribute 'polkadot-rpc' missing
+          (pkgs.polkadot-rpc or pkgs.emptyDirectory)
+
+          self.polkadot-get_chain_path
 
           self.coreutils
           self.curl
@@ -131,8 +133,6 @@
           self.systemd
           self.xxd
         ]}
-        SNAPSHOT_DIR=${lib.escapeShellArg cfg.snapshotDirectory}
-
         main() {
           if test "$UID" != 0; then
             echo "$0: error: this command must be run as root" >&2
@@ -220,49 +220,39 @@
 
         # Database snapshot management
         snapshot() (
-          chain_path=$(get_chain_path)
-          response=$(rpc chain_getBlock)
-          block_height_base16=$(echo "$response" | jq -er .result.block.header.number)
-          block_height_base10=$(printf %d "$block_height_base16")
-          archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
-          (
-            trap restart EXIT
-            stop
-            tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
+          journalctl -f -n 0 -u polkadot-validator-snapshot-create.service >&2 &
+          trap 'kill %1' EXIT
+          start_time=$(date -Is)
+          systemctl start polkadot-validator-snapshot-create.service
+          Result=$(systemctl show polkadot-validator-snapshot-create.service -p Result | cut -d= -f2-)
+          ExecMainStatus=$(systemctl show polkadot-validator-snapshot-create.service -p ExecMainStatus | cut -d= -f2-)
+          if test "$Result" != success; then
+            echo "$0: snapshot: error: failed." >&2
+            exit $ExecMainStatus
+          fi
+          path=$(
+            journalctl --since="$start_time" -u polkadot-validator-snapshot-create.service |
+            sed -nr 's|.*(file://.*)|\1|p' | tail -n 1
           )
-          echo "file://$archive"
+          if test -z "$path"; then
+            echo "$0: snapshot: error: failed to obtain snapshot path." >&2
+            exit 1
+          fi
+          echo "$path"
         )
         restore() (
           snapshot_url=$1
-          chain_path=$(get_chain_path)
-          mkdir -p "$chain_path"
-          (
-            trap 'rmdir "$chain_path"/snapshot' EXIT
-            mkdir "$chain_path"/snapshot
-            (
-              trap 'rm "$chain_path"/snapshot/tarball' EXIT
-              case $snapshot_url in
-                file:*)
-                  ln -s "''${snapshot_url#file://}" "$chain_path"/snapshot/tarball
-                  ;;
-                http:*|https:*)
-                  curl "$snapshot_url" -O "$chain_path"/snapshot/tarball
-                  ;;
-                *)
-                  echo "$0: restore: unknown scheme: $snapshot_url" >&2
-                  return 1
-              esac
-              tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
-              chown -R nobody:nogroup "$chain_path"/snapshot/db
-              (
-                trap restart EXIT
-                stop
-                rm -fR "$chain_path"/db.backup
-                mv -T "$chain_path"/db "$chain_path"/db.backup
-                mv "$chain_path"/snapshot/db "$chain_path"/db
-              )
-            )
-          )
+          journalctl -f -n 0 -u polkadot-validator-snapshot-restore.service >&2 &
+          trap 'kill %1' EXIT
+          systemctl set-environment POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL="$snapshot_url"
+          systemctl start polkadot-validator-snapshot-restore.service
+          systemctl unset-environment POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL
+          Result=$(systemctl show polkadot-validator-snapshot-restore.service -p Result | cut -d= -f2-)
+          ExecMainStatus=$(systemctl show polkadot-validator-snapshot-restore.service -p Result | cut -d= -f2-)
+          if test "$Result" != success; then
+            echo "$0: restore: error: failed." >&2
+            exit $ExecMainStatus
+          fi
         )
 
         # Informative functions
@@ -289,17 +279,6 @@
         }
 
         # Helper functions
-        get_chain_path() (
-          pid=$(systemctl show --property MainPID --value polkadot-validator.service)
-          path=$(ls -l /proc/"$pid"/fd | sed -nr '
-            s:.* -> (/var/lib/private/polkadot-validator/chains/[^/]+)/db/.*:\1:p;T;q
-          ')
-          if test -z "$path"; then
-            echo "$0: get_chain_path: error: path not found." >&2
-            return 1
-          fi
-          echo "$path"
-        )
         print_setup_instructions() (
           cat >&2 ${self.writeText "setup.txt" ''
             This function has no effect.
@@ -323,6 +302,19 @@
         )
 
         main "$@"
+      '';
+      polkadot-get_chain_path = pkgs.writers.writeDashBin "get_chain_path" ''
+        set -efu
+        spec=$(${cfg.package}/bin/polkadot build-spec ${lib.escapeShellArgs (lib.flatten [
+          (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
+        ])})
+        chain_id=$(echo "$spec" | ${pkgs.jq}/bin/jq -er .id)
+        path=/var/lib/private/polkadot-validator/chains/$chain_id
+        if ! test -d "$path"; then
+          echo "$0: error: path not found." >&2
+          return 1
+        fi
+        echo "$path"
       '';
     })];
     security.selinux.packages = [
@@ -716,6 +708,7 @@
     };
     systemd.tmpfiles.rules = [
       "d ${builtins.dirOf cfg.keyFile} 0700 - -"
+      "d ${cfg.snapshotDirectory} 0700 - -"
       "d /var/lib/private/polkadot-validator 0700 - -"
     ];
     systemd.paths.polkadot-validator-orchestrator = {
@@ -799,6 +792,100 @@
           PathExists= activates its target unit continuously as long as the
           path exists.
         ''}";
+      };
+    };
+    systemd.services.polkadot-validator-snapshot-create = {
+      environment = {
+        CHAIN = cfg.chain;
+        SNAPSHOT_DIR = cfg.snapshotDirectory;
+      };
+      path = [
+        # XXX `or pkgs.emptyDirectory` is required here because there appears
+        # to be an inconsistency evaluating overlays, causing checks to fail
+        # with error: attribute 'polkadot-rpc' missing
+        (pkgs.polkadot-rpc or pkgs.emptyDirectory)
+
+        pkgs.coreutils
+        pkgs.gnutar
+        pkgs.jq
+        pkgs.lz4
+        pkgs.polkadot-get_chain_path
+        pkgs.systemd
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-create" ''
+          set -efu
+          chain_path=$(get_chain_path)
+          response=$(rpc chain_getBlock)
+          block_height_base16=$(echo "$response" | jq -er .result.block.header.number)
+          block_height_base10=$(printf %d "$block_height_base16")
+          archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
+          (
+            trap 'systemctl restart polkadot-validator.service' EXIT
+            systemctl stop polkadot-validator.service
+            tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
+          )
+          echo "file://$archive"
+        '';
+        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        UMask = "0027";
+      };
+      unitConfig = {
+        Description = "Polkadot Validator Snapshot Creator";
+      };
+    };
+    systemd.services.polkadot-validator-snapshot-restore = {
+      environment = {
+        # POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL is set by systemctl set-environment
+      };
+      path = [
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.gnutar
+        pkgs.lz4
+        pkgs.polkadot-get_chain_path
+        pkgs.systemd
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-restore" ''
+          set -efu
+          chain_path=$(get_chain_path)
+          mkdir -p "$chain_path"
+          (
+            trap 'rmdir "$chain_path"/snapshot' EXIT
+            mkdir "$chain_path"/snapshot
+            (
+              trap 'rm "$chain_path"/snapshot/tarball' EXIT
+              case $POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL in
+                file:*)
+                  ln -s "''${POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL#file://}" "$chain_path"/snapshot/tarball
+                  ;;
+                http:*|https:*)
+                  curl "$POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL" -O "$chain_path"/snapshot/tarball
+                  ;;
+                *)
+                  echo "$0: unknown scheme: $POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL" >&2
+                  return 1
+              esac
+              tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
+              chown -R nobody:nogroup "$chain_path"/snapshot/db
+              (
+                trap 'systemctl restart polkadot-validator.service' EXIT
+                systemctl stop polkadot-validator.service
+                rm -fR "$chain_path"/db.backup
+                mv -T "$chain_path"/db "$chain_path"/db.backup
+                mv "$chain_path"/snapshot/db "$chain_path"/db
+              )
+            )
+          )
+        '';
+        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        UMask = "0027";
+      };
+      unitConfig = {
+        Description = "Polkadot Validator Snapshot Restorer";
       };
     };
   };
