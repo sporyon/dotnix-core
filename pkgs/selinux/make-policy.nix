@@ -76,5 +76,6 @@ pkgs.runCommand name {
     fi
   '') packages}
 
+  rm .attr-*
   cp -r . $out
 ''
