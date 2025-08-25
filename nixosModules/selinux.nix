@@ -66,10 +66,12 @@
         "selinux/semanage.conf"
         "selinux/${config.security.selinux.policy.meta.store}/policy/policy.${toString config.security.selinux.policy.meta.policyVersion}"
         "selinux/${config.security.selinux.policy.meta.store}/seusers"
+        "selinux/${config.security.selinux.policy.meta.store}/contexts/default_contexts"
         "selinux/${config.security.selinux.policy.meta.store}/contexts/files/file_contexts"
         "selinux/${config.security.selinux.policy.meta.store}/contexts/files/file_contexts.bin"
         "selinux/${config.security.selinux.policy.meta.store}/contexts/files/file_contexts.homedirs"
         "selinux/${config.security.selinux.policy.meta.store}/contexts/files/file_contexts.homedirs.bin"
+        "selinux/${config.security.selinux.policy.meta.store}/contexts/users/root"
       ] (name: {
         source = "${config.security.selinux.policy}/etc/${name}";
       });
