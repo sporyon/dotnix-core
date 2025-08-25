@@ -71,6 +71,9 @@ pkgs.runCommand name {
                 --noreload \
                 --store-path lib/selinux \
                 --install
+    if test -d ${package}/etc/selinux; then
+      ${pkgs.rsync}/bin/rsync -r ${package}/etc/selinux/ etc/selinux
+    fi
   '') packages}
 
   cp -r . $out
