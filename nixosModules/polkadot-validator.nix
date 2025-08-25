@@ -757,6 +757,7 @@
         '';
         RuntimeDirectory = "polkadot-validator-orchestrator";
         RuntimeDirectoryPreserve = true;
+        SELinuxContext = "system_u:system_r:polkadot_validator_orchestrator_t";
       };
       unitConfig = {
         Description = "Polkadot Validator Orchestrator";
