@@ -76,6 +76,14 @@
         source = "${config.security.selinux.policy}/etc/${name}";
       });
 
+    security.pam.services.login.text = ''
+      auth    required pam_unix.so nullok
+      account required pam_unix.so
+      session required pam_unix.so
+      session required ${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so close
+      session required ${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so open
+    '';
+
     system.activationScripts.selinux = ''
       mkdir -p /var/lib/selinux
       ${pkgs.rsync}/bin/rsync \
@@ -87,5 +95,9 @@
     '';
 
     systemd.package = pkgs.selinux.systemd;
+
+    systemd.tmpfiles.rules = [
+      "d /root 0700 - -"
+    ];
   };
 }
