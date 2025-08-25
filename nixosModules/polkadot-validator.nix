@@ -44,7 +44,7 @@
 
     keyFile = lib.mkOption {
       type = lib.types.str;
-      default = "/root/polkadot-validator.node_key";
+      default = "/var/secrets/polkadot-validator.node_key";
       description = ''
         Path to the Polkadot node key.
       '';
@@ -715,6 +715,7 @@
       };
     };
     systemd.tmpfiles.rules = [
+      "d ${builtins.dirOf cfg.keyFile} 0700 - -"
       "d /var/lib/private/polkadot-validator 0700 - -"
     ];
     systemd.paths.polkadot-validator-orchestrator = {
