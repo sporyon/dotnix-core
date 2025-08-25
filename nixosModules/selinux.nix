@@ -13,6 +13,7 @@
       default = pkgs.selinux.makePolicy "selinux-policy" {
         base = pkgs.selinux.makePolicy "selinux-policy-base" {
           packages = [ pkgs.selinux.refpolicy ];
+          store = "refpolicy";
         };
         packages = config.security.selinux.packages;
         mode = "permissive";
@@ -22,6 +23,7 @@
         pkgs.selinux.makePolicy "selinux-policy" {
           base = pkgs.selinux.makePolicy "selinux-policy-base" {
             packages = [ pkgs.selinux.refpolicy ];
+            store = "refpolicy";
           };
           packages = config.security.selinux.packages;
           mode = "permissive";
