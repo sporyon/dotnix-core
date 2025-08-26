@@ -20,6 +20,8 @@
       # Enable flakes
       nix.settings.experimental-features = [ "flakes" "nix-command" ];
 
+      i18n.defaultLocale = "C.UTF-8";
+
       services.openssh = {
         enable = true;
         settings.PasswordAuthentication = true;
