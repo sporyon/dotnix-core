@@ -84,7 +84,7 @@ inputs.nixpkgs.lib.nixos.runTest {
     # Ensure that the validator gets restarted when secrets are changed.
     alice.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")
     alice.wait_until_fails("systemctl show --property=ActiveEnterTimestamp polkadot-validator.service >/tmp/t2 && diff -u /tmp/t1 /tmp/t2")
-    alice.succeed("systemctl is-active polkadot-validator.service")
+    alice.wait_until_succeeds("systemctl is-active polkadot-validator.service")
 
     # Ensure that the validator gets stopped when secrets get removed.
     alice.succeed("polkadot-validator --unset-node-key")
