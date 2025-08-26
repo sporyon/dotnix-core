@@ -72,7 +72,7 @@
 
     backupDirectory = lib.mkOption {
       type = lib.types.path;
-      default = "/root";
+      default = "/var/backups";
       description = ''
         Path to the directory where backups should be created.
       '';
@@ -113,8 +113,6 @@
         #
         set -efu
 
-        BACKUP_DIR=${lib.escapeShellArg cfg.backupDirectory}
-        CHAIN=${lib.escapeShellArg cfg.chain}
         KEY_FILE=${lib.escapeShellArg cfg.keyFile}
         PATH=${lib.makeBinPath [
           # XXX `or pkgs.emptyDirectory` is required here because there appears
@@ -196,11 +194,28 @@
 
         # Keystore management
         backup_keystore() (
-          chain_path=$(get_chain_path)
-          now=$(date -Is)
-          archive=$BACKUP_DIR/''${CHAIN}_keystore_$now.tar.lz4
-          tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
-          echo "$archive"
+          service=polkadot-validator-backup-keystore.service
+          start_time=$(date -Is)
+          systemctl start "$service"
+          Result=$(systemctl show "$service" -p Result | cut -d= -f2-)
+          if test "$Result" != success; then
+            echo "$0: backup_keystore: failed." >&2
+            ExecMainStatus=$(systemctl show "$service" -p ExecMainStatus | cut -d= -f2-)
+            exit $ExecMainStatus
+          fi
+          id=$(
+            journalctl -o json -u "$service" --since '1 minute ago' |
+            jq -sr 'map(._SYSTEMD_INVOCATION_ID | select(. != null))[-1]'
+          )
+          path=$(
+            journalctl -o cat _SYSTEMD_INVOCATION_ID="$id" |
+            sed -nr '\|^${cfg.backupDirectory}|p' | tail -n 1
+          )
+          if test -z "$path"; then
+            echo "$0: backup_keystore: error: failed to obtain backup path." >&2
+            exit 1
+          fi
+          echo "$path"
         )
 
         # Service management
@@ -436,6 +451,10 @@
           (roletype object_r polkadot_validator_credentials_t)
           (filecon "/run/credentials/polkadot-validator.service(/.*)?" any (system_u object_r polkadot_validator_credentials_t (systemlow systemlow)))
 
+          ${lib.optionalString (cfg.backupDirectory != "/var/backups") /* cil */ ''
+            (filecon "${cfg.backupDirectory}(/.*)?" any (system_u object_r backup_store_t (systemlow systemlow)))
+          ''}
+
           ; polkadot_validator_snapshots_t governs access to snapshots.
           (type polkadot_validator_snapshots_t)
           (roletype object_r polkadot_validator_snapshots_t)
@@ -464,6 +483,10 @@
           ; Allow systemd to transition to the polkadot validator orchestrator to the polkadot_validator_orchestrator_t domain.
           (allow init_t polkadot_validator_orchestrator_t (process (transition)))
           (allow init_t polkadot_validator_orchestrator_t (process2 (nnp_transition)))
+
+          ; Allow creating backups.
+          (allow polkadot_validator_service_t backup_store_t (dir (add_name search write)))
+          (allow polkadot_validator_service_t backup_store_t (file (create getattr ioctl open write)))
 
           ; Allow creating and restoring a snapshots.
           (allow init_t polkadot_validator_credentials_t (file (relabelto)))
@@ -708,6 +731,7 @@
     };
     systemd.tmpfiles.rules = [
       "d ${builtins.dirOf cfg.keyFile} 0700 - -"
+      "d ${cfg.backupDirectory} 0700 - -"
       "d ${cfg.snapshotDirectory} 0700 - -"
       "d /var/lib/private/polkadot-validator 0700 - -"
     ];
@@ -792,6 +816,34 @@
           PathExists= activates its target unit continuously as long as the
           path exists.
         ''}";
+      };
+    };
+    systemd.services.polkadot-validator-backup-keystore = {
+      environment = {
+        CHAIN = cfg.chain;
+        BACKUP_DIR = cfg.backupDirectory;
+      };
+      path = [
+        pkgs.coreutils
+        pkgs.gnutar
+        pkgs.lz4
+        pkgs.polkadot-get_chain_path
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writers.writeDash "polkadot-validator-backup-keystore" ''
+          set -efu
+          chain_path=$(get_chain_path)
+          now=$(date -Is)
+          archive=$BACKUP_DIR/''${CHAIN}_keystore_$now.tar.lz4
+          tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
+          echo "$archive"
+        '';
+        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        UMask = "0027";
+      };
+      unitConfig = {
+        Description = "Polkadot Validator Keystore Backupper";
       };
     };
     systemd.services.polkadot-validator-snapshot-create = {
