@@ -58,10 +58,6 @@
       '';
     };
 
-    enableLoadCredentialWorkaround = lib.mkEnableOption "workaround when LoadCredential= doesn't work" // {
-      interal = true;
-    };
-
     snapshotDirectory = lib.mkOption {
       type = lib.types.path;
       default = "/var/snapshots";
@@ -223,11 +219,7 @@
           journalctl --vacuum-time=2d
         }
         restart() {
-          systemctl stop polkadot-validator.service
-          ${lib.optionalString cfg.enableLoadCredentialWorkaround ''
-            install -D -m 0444 "$KEY_FILE" /run/credentials/polkadot-validator.service/node_key
-          ''}
-          systemctl start polkadot-validator.service
+          systemctl restart polkadot-validator.service
         }
         stop() {
           systemctl stop polkadot-validator.service

@@ -92,7 +92,6 @@
     # Validator configuration
     ({ config, pkgs, ... }: {
       dotnix.polkadot-validator.enable = true;
-      dotnix.polkadot-validator.enableLoadCredentialWorkaround = true;
       dotnix.polkadot-validator.name = "sporyon-dotnix-westend2";
       dotnix.polkadot-validator.chain = "westend";
       dotnix.polkadot-validator.extraArgs = [
