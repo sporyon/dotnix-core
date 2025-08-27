@@ -138,10 +138,16 @@
             --unset-node-key) unset_node_key;;
 
             # Session key management
-            --rotate-keys) rotate_keys;;
+            --rotate-keys)
+              wait_for_polkadot_validator
+              rotate_keys
+              ;;
 
             # Keystore management
-            --backup-keystore) backup_keystore;;
+            --backup-keystore)
+              wait_for_polkadot_validator
+              backup_keystore
+              ;;
 
             # Service management
             --clean-logs) clean_logs;;
@@ -149,8 +155,15 @@
             --stop) stop;;
 
             # Database snapshot management
-            --snapshot) snapshot;;
-            --restore) shift; restore "$@";;
+            --snapshot)
+              wait_for_polkadot_validator
+              snapshot
+              ;;
+            --restore)
+              wait_for_polkadot_validator
+              shift
+              restore "$@"
+              ;;
 
             # Informative functions
             --full-archive-node-setup) full_archive_node_setup;;
@@ -165,6 +178,20 @@
               echo "$0: error: bad argument: $1" >&2
               exit 1
           esac
+        }
+
+        # Wait until the Polkadot Validator service is ready
+        wait_for_polkadot_validator() {
+          if test "$(systemctl is-active polkadot-validator.service)" != active; then
+            echo "$0: error: Polkadot Validator service not running" >&2
+            return 1
+          fi
+          if ! rpc system_name >/dev/null 2>&1; then
+            echo "$0: info: waiting for the Polkadot Validator service to start..." >&2
+            until rpc system_name >/dev/null 2>&1; do
+              sleep 1
+            done
+          fi
         }
 
         # Node key management
