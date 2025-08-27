@@ -17,6 +17,10 @@
       users.users.root.password = "yolo";
       services.getty.autologinUser = "root";
 
+      nix.nixPath = [
+        "nixpkgs=${inputs.nixpkgs}"
+      ];
+
       # Enable flakes
       nix.settings.experimental-features = [ "flakes" "nix-command" ];
 
