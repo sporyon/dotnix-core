@@ -139,8 +139,8 @@ Build the NixOS tarball to be used in Docker:
     nix build .#nixosConfigurations.example.config.system.build.docker
 
 _Note: Instead of building it yourself, you can also be download the
-[tarball](sporyon.io/wp-content/releases/skz9djf25b3gl1y3ii8mlnaa83n22zjj-docker-image-dotnix-docker.tar.gz)
-(sha256sum:bd713187c34e4ac9316afa39b192f37e8e0da4ef18161b2b167babb1c3152a8 )._
+[tarball](https://sporyon.io/wp-content/releases/skz9djf25b3gl1y3ii8mlnaa83n22zjj-docker-image-dotnix-docker.tar.gz)
+(sha256sum:bd713187c34e4ac9316afa39b192f37e8e0da4ef18161b2b167babb1c3152a8d )._
 
 _The following step assumes that the tarball is called `./result`.  This is the
 default location when building it.  When downloading, use the appropriate path
