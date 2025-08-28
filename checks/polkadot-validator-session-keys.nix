@@ -41,6 +41,9 @@ inputs.nixpkgs.lib.nixos.runTest {
     start_all()
     alice.wait_until_succeeds("systemctl is-active multi-user.target")
 
+    # Ensure invalid node key cannot be set.
+    alice.fail("echo INVALIDKEY | polkadot-validator --set-node-key")
+
     # Set some generated node keys to start the validator.
     alice.succeed("polkadot key generate-node-key | polkadot-validator --set-node-key")
     alice.wait_until_succeeds("rpc system_name")

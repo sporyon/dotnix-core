@@ -116,6 +116,7 @@
           # with error: attribute 'polkadot-rpc' missing
           (pkgs.polkadot-rpc or pkgs.emptyDirectory)
 
+          self.polkadot
           self.polkadot-get_chain_path
 
           self.coreutils
@@ -200,6 +201,10 @@
             read -p 'Polkadot validator node key: ' -r -s node_key
           else
             node_key=$(cat)
+          fi
+          if ! echo -n "$node_key" | polkadot key inspect-node-key 2>/dev/null >&2; then
+            echo "$0: set_node_key: invalid input: bad node key" >&2
+            return 1
           fi
           umask 0077
           echo -n "$node_key" > "$KEY_FILE"
