@@ -1,6 +1,6 @@
 # polkadot-validator-keystore-backup
 #
-# This test checks whether the keystore can be backupped.
+# This test checks whether the keystore can be backed up.
 #
 
 { inputs, system }:
