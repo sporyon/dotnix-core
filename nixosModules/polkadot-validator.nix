@@ -129,6 +129,30 @@
         SELinux domain the Polkadot Validator should run in.
       '';
     };
+
+    selinux.p2pPortType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_p2p_port_t";
+      description = ''
+        SELinux port type of Polkadot P2P port.
+      '';
+    };
+
+    selinux.prometheusPortType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_prometheus_port_t";
+      description = ''
+        SELinux port type of the Polkadot Prometheus port.
+      '';
+    };
+
+    selinux.rpcPortType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_rpc_port_t";
+      description = ''
+        SELinux port type of Polkadot RPC port.
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -717,27 +741,27 @@
           (allow ${cfg.selinux.validatorDomainType} howl_port_t (udp_socket (name_bind)))
 
           ; Allow binding and connecting to the default outbound peer-to-peer networking port.
-          (type polkadot_p2p_port_t)
-          (roletype object_r polkadot_p2p_port_t)
-          (portcon tcp ${toString cfg.port} (system_u object_r polkadot_p2p_port_t (systemlow systemlow)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_p2p_port_t (tcp_socket (name_bind name_connect)))
+          (type ${cfg.selinux.p2pPortType})
+          (roletype object_r ${cfg.selinux.p2pPortType})
+          (portcon tcp ${toString cfg.port} (system_u object_r ${cfg.selinux.p2pPortType} (systemlow systemlow)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.p2pPortType} (tcp_socket (name_bind name_connect)))
 
           ; Allow binding to the default polkadot RPC port.
-          (type polkadot_rpc_port_t)
-          (roletype object_r polkadot_rpc_port_t)
-          (portcon tcp ${toString cfg.rpcPort} (system_u object_r polkadot_rpc_port_t (systemlow systemlow)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_rpc_port_t (tcp_socket (name_bind)))
+          (type ${cfg.selinux.rpcPortType})
+          (roletype object_r ${cfg.selinux.rpcPortType})
+          (portcon tcp ${toString cfg.rpcPort} (system_u object_r ${cfg.selinux.rpcPortType} (systemlow systemlow)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.rpcPortType} (tcp_socket (name_bind)))
 
           ; Allow root to interactively connect to the RPC port, e.g. let the validator rotate keys.
-          (allow init_t polkadot_rpc_port_t (tcp_socket (name_connect)))
+          (allow init_t ${cfg.selinux.rpcPortType} (tcp_socket (name_connect)))
           (allow sysadm_systemd_t self (tcp_socket (connect create getattr setopt)))
-          (allow sysadm_systemd_t polkadot_rpc_port_t (tcp_socket (name_connect)))
+          (allow sysadm_systemd_t ${cfg.selinux.rpcPortType} (tcp_socket (name_connect)))
 
           ; Allow binding to the default polkadot prometheus port.
-          (type polkadot_prometheus_port_t)
-          (roletype object_r polkadot_prometheus_port_t)
-          (portcon tcp ${toString cfg.prometheusPort} (system_u object_r polkadot_prometheus_port_t (systemlow systemlow)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_prometheus_port_t (tcp_socket (name_bind)))
+          (type ${cfg.selinux.prometheusPortType})
+          (roletype object_r ${cfg.selinux.prometheusPortType})
+          (portcon tcp ${toString cfg.prometheusPort} (system_u object_r ${cfg.selinux.prometheusPortType} (systemlow systemlow)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.prometheusPortType} (tcp_socket (name_bind)))
 
           ; Allow inbound p2p connections.
           ;
