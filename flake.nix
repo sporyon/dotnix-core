@@ -1,7 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/52faf482a3889b7619003c0daec593a1912fddc1";
-    polkadot.url = "github:andresilva/polkadot.nix/282edc2ce11c2934237e379a778ad1a6978715f0";
+    polkadot.url = "github:andresilva/polkadot.nix/a2eac4baedef48acb30eb869a7f859265d89c915";
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs: {
