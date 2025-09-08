@@ -42,6 +42,30 @@
       '';
     };
 
+    port = lib.mkOption {
+      type = lib.types.port;
+      default = 30333;
+      description = ''
+        Specify p2p protocol TCP port.
+      '';
+    };
+
+    prometheusPort = lib.mkOption {
+      type = lib.types.port;
+      default = 9615;
+      description = ''
+        Specify Prometheus exporter TCP Port.
+      '';
+    };
+
+    rpcPort = lib.mkOption {
+      type = lib.types.port;
+      default = 9944;
+      description = ''
+        Specify JSON-RPC server TCP port.
+      '';
+    };
+
     keyFile = lib.mkOption {
       type = lib.types.str;
       default = "/var/secrets/polkadot-validator.node_key";
@@ -663,13 +687,13 @@
           ; Allow binding and connecting to the default outbound peer-to-peer networking port.
           (type polkadot_p2p_port_t)
           (roletype object_r polkadot_p2p_port_t)
-          (portcon tcp 30333 (system_u object_r polkadot_p2p_port_t (systemlow systemlow)))
+          (portcon tcp ${toString cfg.port} (system_u object_r polkadot_p2p_port_t (systemlow systemlow)))
           (allow polkadot_validator_service_t polkadot_p2p_port_t (tcp_socket (name_bind name_connect)))
 
           ; Allow binding to the default polkadot RPC port.
           (type polkadot_rpc_port_t)
           (roletype object_r polkadot_rpc_port_t)
-          (portcon tcp 9944 (system_u object_r polkadot_rpc_port_t (systemlow systemlow)))
+          (portcon tcp ${toString cfg.rpcPort} (system_u object_r polkadot_rpc_port_t (systemlow systemlow)))
           (allow polkadot_validator_service_t polkadot_rpc_port_t (tcp_socket (name_bind)))
 
           ; Allow root to interactively connect to the RPC port, e.g. let the validator rotate keys.
@@ -680,7 +704,7 @@
           ; Allow binding to the default polkadot prometheus port.
           (type polkadot_prometheus_port_t)
           (roletype object_r polkadot_prometheus_port_t)
-          (portcon tcp 9615 (system_u object_r polkadot_prometheus_port_t (systemlow systemlow)))
+          (portcon tcp ${toString cfg.prometheusPort} (system_u object_r polkadot_prometheus_port_t (systemlow systemlow)))
           (allow polkadot_validator_service_t polkadot_prometheus_port_t (tcp_socket (name_bind)))
 
           ; Allow inbound p2p connections.
