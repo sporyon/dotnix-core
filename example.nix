@@ -117,6 +117,8 @@
         pkgs.selinux.coreutils
         pkgs.selinux.selinux-python
       ];
+
+      boot.kernelParams = [ "enforcing=1" ];
     })
   ];
 }
