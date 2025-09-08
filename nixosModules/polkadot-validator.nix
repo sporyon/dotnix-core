@@ -113,6 +113,22 @@
         Path to the directory where state should be stored.
       '';
     };
+
+    selinux.orchestratorDomainType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_validator_orchestrator_t";
+      description = ''
+        SELinux domain the Polkadot Validator Orchestrator should run in.
+      '';
+    };
+
+    selinux.validatorDomainType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_validator_service_t";
+      description = ''
+        SELinux domain the Polkadot Validator should run in.
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -402,7 +418,7 @@
         destination = "/share/selinux/modules/system.cil";
         text = /* cil */ ''
           ;; This module contains rules needed by systemd before transitioning
-          ;; to polkadot_validator_service_t
+          ;; to service contexts.
 
           ; Allow root to log in.
           (typeattributeset can_exec_unlabeled (sysadm_systemd_t))
@@ -493,17 +509,17 @@
           ;; validator service as well as rules needed by polkadot to run
           ;; properly.
 
-          ; polkadot_validator_service_t defines the SELinux domain within which the polkadot validator service runs.
-          (type polkadot_validator_service_t)
-          (typeattributeset domain (polkadot_validator_service_t))
-          (typeattributeset can_exec_unlabeled (polkadot_validator_service_t))
-          (roletype system_r polkadot_validator_service_t)
+          ; Defines the SELinux domain within which the polkadot validator service runs.
+          (type ${cfg.selinux.validatorDomainType})
+          (typeattributeset domain (${cfg.selinux.validatorDomainType}))
+          (typeattributeset can_exec_unlabeled (${cfg.selinux.validatorDomainType}))
+          (roletype system_r ${cfg.selinux.validatorDomainType})
 
-          ; polkadot_validator_orchestrator_t defines the SELinux domain within which the polkadot validator orchestrator runs.
-          (type polkadot_validator_orchestrator_t)
-          (typeattributeset domain (polkadot_validator_orchestrator_t))
-          (typeattributeset can_exec_unlabeled (polkadot_validator_orchestrator_t))
-          (roletype system_r polkadot_validator_orchestrator_t)
+          ; Defines the SELinux domain within which the polkadot validator orchestrator runs.
+          (type ${cfg.selinux.orchestratorDomainType})
+          (typeattributeset domain (${cfg.selinux.orchestratorDomainType}))
+          (typeattributeset can_exec_unlabeled (${cfg.selinux.orchestratorDomainType}))
+          (roletype system_r ${cfg.selinux.orchestratorDomainType})
 
           ; polkadot_validator_state_t governs access to polkadot validator's state directory.
           (type polkadot_validator_state_t)
@@ -540,17 +556,17 @@
           (allow init_t polkadot_validator_credentials_t (dir (add_name create getattr mounton open read relabelto remove_name rmdir search setattr write)))
           (allow init_t polkadot_validator_credentials_t (file (create getattr open read rename setattr unlink write)))
 
-          ; Allow systemd to transition to the polkadot validator service to the polkadot_validator_service_t domain.
-          (allow init_t polkadot_validator_service_t (process (transition)))
-          (allow init_t polkadot_validator_service_t (process2 (nnp_transition)))
+          ; Allow systemd to transition to the Polkadot Validator service domain.
+          (allow init_t ${cfg.selinux.validatorDomainType} (process (transition)))
+          (allow init_t ${cfg.selinux.validatorDomainType} (process2 (nnp_transition)))
 
-          ; Allow systemd to transition to the polkadot validator orchestrator to the polkadot_validator_orchestrator_t domain.
-          (allow init_t polkadot_validator_orchestrator_t (process (transition)))
-          (allow init_t polkadot_validator_orchestrator_t (process2 (nnp_transition)))
+          ; Allow systemd to transition to the Polkadot Validator Orchestrator domain.
+          (allow init_t ${cfg.selinux.orchestratorDomainType} (process (transition)))
+          (allow init_t ${cfg.selinux.orchestratorDomainType} (process2 (nnp_transition)))
 
           ; Allow creating backups.
-          (allow polkadot_validator_service_t backup_store_t (dir (add_name search write)))
-          (allow polkadot_validator_service_t backup_store_t (file (create getattr ioctl open write)))
+          (allow ${cfg.selinux.validatorDomainType} backup_store_t (dir (add_name search write)))
+          (allow ${cfg.selinux.validatorDomainType} backup_store_t (file (create getattr ioctl open write)))
 
           ; Allow creating and restoring a snapshots.
           (allow init_t polkadot_validator_credentials_t (file (relabelto)))
@@ -559,10 +575,10 @@
           (allow init_t polkadot_validator_state_t (lnk_file (create getattr read unlink)))
 
           ; Allow root to inspect services.
-          (allow sysadm_systemd_t polkadot_validator_orchestrator_t (dir (search)))
-          (allow sysadm_systemd_t polkadot_validator_orchestrator_t (file (read)))
-          (allow sysadm_systemd_t polkadot_validator_service_t (dir (search)))
-          (allow sysadm_systemd_t polkadot_validator_service_t (file (getattr ioctl open read)))
+          (allow sysadm_systemd_t ${cfg.selinux.orchestratorDomainType} (dir (search)))
+          (allow sysadm_systemd_t ${cfg.selinux.orchestratorDomainType} (file (read)))
+          (allow sysadm_systemd_t ${cfg.selinux.validatorDomainType} (dir (search)))
+          (allow sysadm_systemd_t ${cfg.selinux.validatorDomainType} (file (getattr ioctl open read)))
           (allow sysadm_systemd_t polkadot_validator_state_t (dir (getattr search)))
 
           ; Allow root setting and unsetting node keys.
@@ -573,144 +589,144 @@
           (allow sysadm_systemd_t sysctl_vm_overcommit_t (file (open)))
 
           ; Allow to use FDs inherited from systemd.
-          (allow polkadot_validator_orchestrator_t init_t (fd (use)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_t (fd (use)))
 
           ; Allow to execute unlabled executable in the Nix store.
-          (allow polkadot_validator_orchestrator_t unlabeled_t (dir (getattr mounton open read search)))
-          (allow polkadot_validator_orchestrator_t unlabeled_t (file (entrypoint getattr map open read execute execute_no_trans)))
-          (allow polkadot_validator_orchestrator_t unlabeled_t (lnk_file (read)))
+          (allow ${cfg.selinux.orchestratorDomainType} unlabeled_t (dir (getattr mounton open read search)))
+          (allow ${cfg.selinux.orchestratorDomainType} unlabeled_t (file (entrypoint getattr map open read execute execute_no_trans)))
+          (allow ${cfg.selinux.orchestratorDomainType} unlabeled_t (lnk_file (read)))
 
           ; Allow running Polkadot Validator Orchestrator.
-          (allow polkadot_validator_orchestrator_t devlog_t (sock_file (write)))
-          (allow polkadot_validator_orchestrator_t init_runtime_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t init_runtime_t (sock_file (write)))
-          (allow polkadot_validator_orchestrator_t init_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t init_t (file (read)))
-          (allow polkadot_validator_orchestrator_t init_t (lnk_file (read)))
-          (allow polkadot_validator_orchestrator_t init_t (unix_dgram_socket (sendto)))
-          (allow polkadot_validator_orchestrator_t init_t (unix_stream_socket (connectto getattr ioctl read write)))
-          (allow polkadot_validator_orchestrator_t kernel_t (fd (use)))
-          (allow polkadot_validator_orchestrator_t kmsg_device_t (chr_file (open write)))
-          (allow polkadot_validator_orchestrator_t nscd_runtime_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t nscd_runtime_t (sock_file (write)))
-          (allow polkadot_validator_orchestrator_t proc_t (filesystem (getattr)))
-          (allow polkadot_validator_orchestrator_t secrets_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t secrets_t (file (getattr open read)))
-          (allow polkadot_validator_orchestrator_t self (capability (net_admin sys_resource)))
-          (allow polkadot_validator_orchestrator_t self (unix_dgram_socket (connect create getopt setopt write)))
-          (allow polkadot_validator_orchestrator_t sysctl_kernel_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t sysctl_kernel_t (file (open read)))
-          (allow polkadot_validator_orchestrator_t syslogd_runtime_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t tmpfs_t (dir (search)))
-          (allow polkadot_validator_orchestrator_t unlabeled_t (file (ioctl)))
-          (allow polkadot_validator_orchestrator_t unlabeled_t (service (start status stop)))
-          (allow polkadot_validator_orchestrator_t var_run_t (dir (add_name create remove_name write)))
-          (allow polkadot_validator_orchestrator_t var_run_t (file (create getattr ioctl open read setattr unlink write)))
+          (allow ${cfg.selinux.orchestratorDomainType} devlog_t (sock_file (write)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_runtime_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_runtime_t (sock_file (write)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_t (file (read)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_t (lnk_file (read)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_t (unix_dgram_socket (sendto)))
+          (allow ${cfg.selinux.orchestratorDomainType} init_t (unix_stream_socket (connectto getattr ioctl read write)))
+          (allow ${cfg.selinux.orchestratorDomainType} kernel_t (fd (use)))
+          (allow ${cfg.selinux.orchestratorDomainType} kmsg_device_t (chr_file (open write)))
+          (allow ${cfg.selinux.orchestratorDomainType} nscd_runtime_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} nscd_runtime_t (sock_file (write)))
+          (allow ${cfg.selinux.orchestratorDomainType} proc_t (filesystem (getattr)))
+          (allow ${cfg.selinux.orchestratorDomainType} secrets_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} secrets_t (file (getattr open read)))
+          (allow ${cfg.selinux.orchestratorDomainType} self (capability (net_admin sys_resource)))
+          (allow ${cfg.selinux.orchestratorDomainType} self (unix_dgram_socket (connect create getopt setopt write)))
+          (allow ${cfg.selinux.orchestratorDomainType} sysctl_kernel_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} sysctl_kernel_t (file (open read)))
+          (allow ${cfg.selinux.orchestratorDomainType} syslogd_runtime_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} tmpfs_t (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} unlabeled_t (file (ioctl)))
+          (allow ${cfg.selinux.orchestratorDomainType} unlabeled_t (service (start status stop)))
+          (allow ${cfg.selinux.orchestratorDomainType} var_run_t (dir (add_name create remove_name write)))
+          (allow ${cfg.selinux.orchestratorDomainType} var_run_t (file (create getattr ioctl open read setattr unlink write)))
 
           ; Allow retrieving file metadata.
-          (allow polkadot_validator_service_t fs_t (filesystem (getattr)))
+          (allow ${cfg.selinux.validatorDomainType} fs_t (filesystem (getattr)))
 
           ; Allow restarting polkadot-validator.service.
-          (allow polkadot_validator_service_t fs_t (filesystem (unmount)))
+          (allow ${cfg.selinux.validatorDomainType} fs_t (filesystem (unmount)))
 
           ; Allow to access its state directory.
-          (allow polkadot_validator_service_t var_lib_t (lnk_file (getattr read)))
-          (allow polkadot_validator_service_t var_lib_t (dir (search)))
-          (allow polkadot_validator_service_t polkadot_validator_state_t (dir (add_name create getattr mounton open read remove_name rmdir search write)))
-          (allow polkadot_validator_service_t polkadot_validator_state_t (file (append create getattr lock open read rename setattr unlink write)))
+          (allow ${cfg.selinux.validatorDomainType} var_lib_t (lnk_file (getattr read)))
+          (allow ${cfg.selinux.validatorDomainType} var_lib_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (dir (add_name create getattr mounton open read remove_name rmdir search write)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (file (append create getattr lock open read rename setattr unlink write)))
 
           ; Allow to access its credentials directory.
-          (allow polkadot_validator_service_t polkadot_validator_credentials_t (dir (search)))
-          (allow polkadot_validator_service_t polkadot_validator_credentials_t (file (getattr open read)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_credentials_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_credentials_t (file (getattr open read)))
 
           ; Allow to contact the name service caching daemon.
-          (allow polkadot_validator_service_t nscd_runtime_t (dir (search)))
-          (allow polkadot_validator_service_t nscd_runtime_t (sock_file (write)))
-          (allow polkadot_validator_service_t init_t (unix_stream_socket (connectto getattr ioctl read write)))
+          (allow ${cfg.selinux.validatorDomainType} nscd_runtime_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} nscd_runtime_t (sock_file (write)))
+          (allow ${cfg.selinux.validatorDomainType} init_t (unix_stream_socket (connectto getattr ioctl read write)))
 
           ; Allow to access its private temporary directory.
-          (allow polkadot_validator_service_t tmpfs_t (dir (search)))
-          (allow polkadot_validator_service_t tmpfs_t (file (getattr map open read write)))
+          (allow ${cfg.selinux.validatorDomainType} tmpfs_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} tmpfs_t (file (getattr map open read write)))
 
           ; Allow to use FDs inherited from systemd.
-          (allow polkadot_validator_service_t init_t (fd (use)))
+          (allow ${cfg.selinux.validatorDomainType} init_t (fd (use)))
 
           ; Allow apply additional memory protection after relocation
-          (allow polkadot_validator_service_t kernel_t (fd (use)))
+          (allow ${cfg.selinux.validatorDomainType} kernel_t (fd (use)))
 
           ; Allow to execute unlabled executable in the Nix store.
-          (allow polkadot_validator_service_t unlabeled_t (dir (getattr mounton open read search)))
-          (allow polkadot_validator_service_t unlabeled_t (file (entrypoint getattr map open read execute execute_no_trans)))
-          (allow polkadot_validator_service_t unlabeled_t (lnk_file (read)))
+          (allow ${cfg.selinux.validatorDomainType} unlabeled_t (dir (getattr mounton open read search)))
+          (allow ${cfg.selinux.validatorDomainType} unlabeled_t (file (entrypoint getattr map open read execute execute_no_trans)))
+          (allow ${cfg.selinux.validatorDomainType} unlabeled_t (lnk_file (read)))
 
           ; Allow creating snapshots.
-          (allow polkadot_validator_service_t devlog_t (sock_file (write)))
-          (allow polkadot_validator_service_t init_runtime_t (dir (search)))
-          (allow polkadot_validator_service_t init_runtime_t (sock_file (write)))
-          (allow polkadot_validator_service_t init_t (dir (search)))
-          (allow polkadot_validator_service_t init_t (file (read)))
-          (allow polkadot_validator_service_t init_t (lnk_file (read)))
-          (allow polkadot_validator_service_t init_t (unix_dgram_socket (sendto)))
-          (allow polkadot_validator_service_t polkadot_rpc_port_t (tcp_socket (name_connect)))
-          (allow polkadot_validator_service_t polkadot_validator_snapshots_t (dir (add_name search write)))
-          (allow polkadot_validator_service_t polkadot_validator_snapshots_t (file (create getattr ioctl open write)))
-          (allow polkadot_validator_service_t proc_t (filesystem (getattr)))
-          (allow polkadot_validator_service_t self (capability (dac_override dac_read_search sys_resource)))
-          (allow polkadot_validator_service_t self (capability (net_admin)))
-          (allow polkadot_validator_service_t self (fifo_file (getattr ioctl)))
-          (allow polkadot_validator_service_t self (unix_dgram_socket (connect create getopt setopt write)))
-          (allow polkadot_validator_service_t syslogd_runtime_t (dir (search)))
-          (allow polkadot_validator_service_t system_dbusd_runtime_t (dir (search)))
-          (allow polkadot_validator_service_t system_dbusd_runtime_t (sock_file (write)))
-          (allow polkadot_validator_service_t unlabeled_t (service (start status stop)))
-          (allow polkadot_validator_service_t user_home_dir_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} devlog_t (sock_file (write)))
+          (allow ${cfg.selinux.validatorDomainType} init_runtime_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} init_runtime_t (sock_file (write)))
+          (allow ${cfg.selinux.validatorDomainType} init_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} init_t (file (read)))
+          (allow ${cfg.selinux.validatorDomainType} init_t (lnk_file (read)))
+          (allow ${cfg.selinux.validatorDomainType} init_t (unix_dgram_socket (sendto)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_rpc_port_t (tcp_socket (name_connect)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_snapshots_t (dir (add_name search write)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_snapshots_t (file (create getattr ioctl open write)))
+          (allow ${cfg.selinux.validatorDomainType} proc_t (filesystem (getattr)))
+          (allow ${cfg.selinux.validatorDomainType} self (capability (dac_override dac_read_search sys_resource)))
+          (allow ${cfg.selinux.validatorDomainType} self (capability (net_admin)))
+          (allow ${cfg.selinux.validatorDomainType} self (fifo_file (getattr ioctl)))
+          (allow ${cfg.selinux.validatorDomainType} self (unix_dgram_socket (connect create getopt setopt write)))
+          (allow ${cfg.selinux.validatorDomainType} syslogd_runtime_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} system_dbusd_runtime_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} system_dbusd_runtime_t (sock_file (write)))
+          (allow ${cfg.selinux.validatorDomainType} unlabeled_t (service (start status stop)))
+          (allow ${cfg.selinux.validatorDomainType} user_home_dir_t (dir (search)))
 
           ; Allow restoring snapshots.
-          (allow polkadot_validator_service_t polkadot_validator_snapshots_t (file (read)))
-          (allow polkadot_validator_service_t polkadot_validator_state_t (dir (rename reparent setattr)))
-          (allow polkadot_validator_service_t polkadot_validator_state_t (lnk_file (create getattr read unlink)))
-          (allow polkadot_validator_service_t self (capability (chown fowner fsetid)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_snapshots_t (file (read)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (dir (rename reparent setattr)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (lnk_file (create getattr read unlink)))
+          (allow ${cfg.selinux.validatorDomainType} self (capability (chown fowner fsetid)))
 
           ; Allow to sandbox workers.
-          (allow polkadot_validator_service_t self (cap_userns (sys_admin)))
-          (allow polkadot_validator_service_t self (user_namespace (create)))
+          (allow ${cfg.selinux.validatorDomainType} self (cap_userns (sys_admin)))
+          (allow ${cfg.selinux.validatorDomainType} self (user_namespace (create)))
 
-          (allow polkadot_validator_service_t self (anon_inode (create map read write)))
-          (allow polkadot_validator_service_t self (fifo_file (read write)))
-          (allow polkadot_validator_service_t self (process (execmem getsched)))
+          (allow ${cfg.selinux.validatorDomainType} self (anon_inode (create map read write)))
+          (allow ${cfg.selinux.validatorDomainType} self (fifo_file (read write)))
+          (allow ${cfg.selinux.validatorDomainType} self (process (execmem getsched)))
 
           ; Allow accessing various virtual file systems.
-          (allow polkadot_validator_service_t cgroup_t (dir (search)))
-          (allow polkadot_validator_service_t cgroup_t (file (getattr read open)))
-          (allow polkadot_validator_service_t proc_t (file (getattr open read)))
-          (allow polkadot_validator_service_t sysctl_kernel_t (dir (search)))
-          (allow polkadot_validator_service_t sysctl_kernel_t (file (open read)))
-          (allow polkadot_validator_service_t sysctl_vm_overcommit_t (file (open read)))
-          (allow polkadot_validator_service_t sysctl_vm_t (dir (search)))
-          (allow polkadot_validator_service_t sysfs_t (file (getattr open read)))
-          (allow polkadot_validator_service_t sysfs_t (lnk_file (read)))
+          (allow ${cfg.selinux.validatorDomainType} cgroup_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} cgroup_t (file (getattr read open)))
+          (allow ${cfg.selinux.validatorDomainType} proc_t (file (getattr open read)))
+          (allow ${cfg.selinux.validatorDomainType} sysctl_kernel_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} sysctl_kernel_t (file (open read)))
+          (allow ${cfg.selinux.validatorDomainType} sysctl_vm_overcommit_t (file (open read)))
+          (allow ${cfg.selinux.validatorDomainType} sysctl_vm_t (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} sysfs_t (file (getattr open read)))
+          (allow ${cfg.selinux.validatorDomainType} sysfs_t (lnk_file (read)))
 
           ; Allow working with sockets.
-          (allow polkadot_validator_service_t self (netlink_route_socket (bind create nlmsg_read read write)))
-          (allow polkadot_validator_service_t self (tcp_socket (accept bind connect create getattr getopt listen read setopt shutdown write)))
-          (allow polkadot_validator_service_t self (udp_socket (create bind setopt write read)))
-          (allow polkadot_validator_service_t node_t (tcp_socket (node_bind)))
-          (allow polkadot_validator_service_t node_t (udp_socket (node_bind)))
+          (allow ${cfg.selinux.validatorDomainType} self (netlink_route_socket (bind create nlmsg_read read write)))
+          (allow ${cfg.selinux.validatorDomainType} self (tcp_socket (accept bind connect create getattr getopt listen read setopt shutdown write)))
+          (allow ${cfg.selinux.validatorDomainType} self (udp_socket (create bind setopt write read)))
+          (allow ${cfg.selinux.validatorDomainType} node_t (tcp_socket (node_bind)))
+          (allow ${cfg.selinux.validatorDomainType} node_t (udp_socket (node_bind)))
 
           ; Allow binding to the mDNS port (5353).
-          (allow polkadot_validator_service_t howl_port_t (udp_socket (name_bind)))
+          (allow ${cfg.selinux.validatorDomainType} howl_port_t (udp_socket (name_bind)))
 
           ; Allow binding and connecting to the default outbound peer-to-peer networking port.
           (type polkadot_p2p_port_t)
           (roletype object_r polkadot_p2p_port_t)
           (portcon tcp ${toString cfg.port} (system_u object_r polkadot_p2p_port_t (systemlow systemlow)))
-          (allow polkadot_validator_service_t polkadot_p2p_port_t (tcp_socket (name_bind name_connect)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_p2p_port_t (tcp_socket (name_bind name_connect)))
 
           ; Allow binding to the default polkadot RPC port.
           (type polkadot_rpc_port_t)
           (roletype object_r polkadot_rpc_port_t)
           (portcon tcp ${toString cfg.rpcPort} (system_u object_r polkadot_rpc_port_t (systemlow systemlow)))
-          (allow polkadot_validator_service_t polkadot_rpc_port_t (tcp_socket (name_bind)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_rpc_port_t (tcp_socket (name_bind)))
 
           ; Allow root to interactively connect to the RPC port, e.g. let the validator rotate keys.
           (allow init_t polkadot_rpc_port_t (tcp_socket (name_connect)))
@@ -721,7 +737,7 @@
           (type polkadot_prometheus_port_t)
           (roletype object_r polkadot_prometheus_port_t)
           (portcon tcp ${toString cfg.prometheusPort} (system_u object_r polkadot_prometheus_port_t (systemlow systemlow)))
-          (allow polkadot_validator_service_t polkadot_prometheus_port_t (tcp_socket (name_bind)))
+          (allow ${cfg.selinux.validatorDomainType} polkadot_prometheus_port_t (tcp_socket (name_bind)))
 
           ; Allow inbound p2p connections.
           ;
@@ -733,12 +749,12 @@
           ; patching refpolicy or just reusing its portcons, and as refpolicy
           ; only contains two ranges that are used by polkadot for inbound p2p
           ; connections, we're doing the latter here.
-          (allow polkadot_validator_service_t unreserved_port_t (udp_socket (name_bind)))
-          (allow polkadot_validator_service_t traceroute_port_t (udp_socket (name_bind)))
+          (allow ${cfg.selinux.validatorDomainType} unreserved_port_t (udp_socket (name_bind)))
+          (allow ${cfg.selinux.validatorDomainType} traceroute_port_t (udp_socket (name_bind)))
 
           ; Allow connecting to boot nodes.
           ; As boot nodes can run on any port, so we cannot really put a restriction here.
-          (allow polkadot_validator_service_t port_type (tcp_socket (name_connect)))
+          (allow ${cfg.selinux.validatorDomainType} port_type (tcp_socket (name_connect)))
         '';
       })
     ];
@@ -759,7 +775,7 @@
         DynamicUser = true;
         User = "polkadot";
         Group = "polkadot";
-        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
         Restart = "always";
         RestartSec = 120;
         CapabilityBoundingSet = "";
@@ -838,7 +854,7 @@
         '';
         RuntimeDirectory = "polkadot-validator-orchestrator";
         RuntimeDirectoryPreserve = true;
-        SELinuxContext = "system_u:system_r:polkadot_validator_orchestrator_t";
+        SELinuxContext = "system_u:system_r:${cfg.selinux.orchestratorDomainType}";
       };
       unitConfig = {
         Description = "Polkadot Validator Orchestrator";
@@ -903,7 +919,7 @@
           tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
           echo "$archive"
         '';
-        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
         UMask = "0027";
       };
       unitConfig = {
@@ -944,7 +960,7 @@
           )
           echo "file://$archive"
         '';
-        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
         UMask = "0027";
       };
       unitConfig = {
@@ -997,7 +1013,7 @@
             )
           )
         '';
-        SELinuxContext = "system_u:system_r:polkadot_validator_service_t";
+        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
         UMask = "0027";
       };
       unitConfig = {
