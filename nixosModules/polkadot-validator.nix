@@ -97,6 +97,22 @@
         Path to the directory where backups should be created.
       '';
     };
+
+    credentialsDirectory = lib.mkOption {
+      type = lib.types.path;
+      default = "/run/credentials/polkadot-validator.service";
+      description = ''
+        Path to the directory where credentials are stored.
+      '';
+    };
+
+    stateDirectory = lib.mkOption {
+      type = lib.types.path;
+      default = "/var/lib/private/polkadot-validator";
+      description = ''
+        Path to the directory where state should be stored.
+      '';
+    };
   };
   config = let
     cfg = config.dotnix.polkadot-validator;
@@ -372,7 +388,7 @@
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
         ])})
         chain_id=$(echo "$spec" | ${pkgs.jq}/bin/jq -er .id)
-        path=/var/lib/private/polkadot-validator/chains/$chain_id
+        path=${cfg.stateDirectory}/chains/$chain_id
         if ! test -d "$path"; then
           echo "$0: error: path not found." >&2
           return 1
@@ -492,12 +508,12 @@
           ; polkadot_validator_state_t governs access to polkadot validator's state directory.
           (type polkadot_validator_state_t)
           (roletype object_r polkadot_validator_state_t)
-          (filecon "/var/lib/private/polkadot-validator(/.*)?" any (system_u object_r polkadot_validator_state_t (systemlow systemlow)))
+          (filecon "${cfg.stateDirectory}(/.*)?" any (system_u object_r polkadot_validator_state_t (systemlow systemlow)))
 
           ; polkadot_validator_credentials_t governs access to polkadot validator's credentials directory.
           (type polkadot_validator_credentials_t)
           (roletype object_r polkadot_validator_credentials_t)
-          (filecon "/run/credentials/polkadot-validator.service(/.*)?" any (system_u object_r polkadot_validator_credentials_t (systemlow systemlow)))
+          (filecon "${cfg.credentialsDirectory}(/.*)?" any (system_u object_r polkadot_validator_credentials_t (systemlow systemlow)))
 
           ${lib.optionalString (cfg.backupDirectory != "/var/backups") /* cil */ ''
             (filecon "${cfg.backupDirectory}(/.*)?" any (system_u object_r backup_store_t (systemlow systemlow)))
@@ -781,7 +797,7 @@
       "d ${builtins.dirOf cfg.keyFile} 0700 - -"
       "d ${cfg.backupDirectory} 0700 - -"
       "d ${cfg.snapshotDirectory} 0700 - -"
-      "d /var/lib/private/polkadot-validator 0700 - -"
+      "d ${cfg.stateDirectory} 0700 - -"
     ];
     systemd.paths.polkadot-validator-orchestrator = {
       wantedBy = [
