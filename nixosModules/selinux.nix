@@ -50,14 +50,10 @@
       {
         name = "selinux-config";
         patch = null;
-        extraStructuredConfig = {
+        structuredExtraConfig = {
           SECURITY_SELINUX = lib.kernel.yes;
         };
       }
-    ];
-
-    boot.kernelParams = [
-      "security=selinux"
     ];
 
     environment.etc =
@@ -75,6 +71,10 @@
       ] (name: {
         source = "${config.security.selinux.policy}/etc/${name}";
       });
+
+    security.lsm = [
+      "selinux"
+    ];
 
     security.pam.services.login.text = ''
       auth    required pam_unix.so nullok
