@@ -130,6 +130,38 @@
       '';
     };
 
+    selinux.credentialsObjectType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_validator_credentials_t";
+      description = ''
+        SELinux object type of Polkadot Validator state directories and files.
+      '';
+    };
+
+    selinux.secretsObjectType = lib.mkOption {
+      type = lib.types.str;
+      default = "secrets_t";
+      description = ''
+        SELinux object type of Polkadot Validator snapshot directory and files.
+      '';
+    };
+
+    selinux.snapshotsObjectType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_validator_snapshots_t";
+      description = ''
+        SELinux object type of Polkadot Validator snapshot directory and files.
+      '';
+    };
+
+    selinux.stateObjectType = lib.mkOption {
+      type = lib.types.str;
+      default = "polkadot_validator_state_t";
+      description = ''
+        SELinux object type of Polkadot Validator state directory and files.
+      '';
+    };
+
     selinux.p2pPortType = lib.mkOption {
       type = lib.types.str;
       default = "polkadot_p2p_port_t";
@@ -501,20 +533,19 @@
           (allow sysadm_systemd_t var_run_t (dir (add_name create search write)))
           (allow sysadm_systemd_t var_run_t (file (create getattr ioctl open setattr write)))
 
-          ; secrets_t governs access to secret file and directories containing secrets.
-          (type secrets_t)
-          (roletype object_r secrets_t)
-          (context secrets_context (system_u object_r secrets_t (systemlow systemlow)))
-          (filecon "${builtins.dirOf cfg.keyFile}(/.*)?" any secrets_context)
+          ; Defines the object type governing access to the secrets directory and its contents.
+          (type ${cfg.selinux.secretsObjectType})
+          (roletype object_r ${cfg.selinux.secretsObjectType})
+          (filecon "${builtins.dirOf cfg.keyFile}(/.*)?" any (system_u object_r ${cfg.selinux.secretsObjectType} (systemlow systemlow)))
 
           ; Allow labling files.
-          (allow secrets_t fs_t (filesystem (associate)))
+          (allow ${cfg.selinux.secretsObjectType} fs_t (filesystem (associate)))
 
           ; Allow systemd to manage secrets.
-          (allow init_t secrets_t (file (getattr create open read watch write)))
+          (allow init_t ${cfg.selinux.secretsObjectType} (file (getattr create open read watch write)))
 
           ; Allow systemd to pass secrets to services.
-          (allow init_t secrets_t (dir (add_name create getattr read relabelfrom relabelto search watch write)))
+          (allow init_t ${cfg.selinux.secretsObjectType} (dir (add_name create getattr read relabelfrom relabelto search watch write)))
 
           ; Allow systemd to run services.
           (allow init_t self (user_namespace (create)))
@@ -545,46 +576,45 @@
           (typeattributeset can_exec_unlabeled (${cfg.selinux.orchestratorDomainType}))
           (roletype system_r ${cfg.selinux.orchestratorDomainType})
 
-          ; polkadot_validator_state_t governs access to polkadot validator's state directory.
-          (type polkadot_validator_state_t)
-          (roletype object_r polkadot_validator_state_t)
-          (filecon "${cfg.stateDirectory}(/.*)?" any (system_u object_r polkadot_validator_state_t (systemlow systemlow)))
+          ; Defines the object type governing access to polkadot validator's state directory and its contents.
+          (type ${cfg.selinux.stateObjectType})
+          (roletype object_r ${cfg.selinux.stateObjectType})
+          (filecon "${cfg.stateDirectory}(/.*)?" any (system_u object_r ${cfg.selinux.stateObjectType} (systemlow systemlow)))
 
-          ; polkadot_validator_credentials_t governs access to polkadot validator's credentials directory.
-          (type polkadot_validator_credentials_t)
-          (roletype object_r polkadot_validator_credentials_t)
-          (filecon "${cfg.credentialsDirectory}(/.*)?" any (system_u object_r polkadot_validator_credentials_t (systemlow systemlow)))
+          ; Defines the object type governing access to polkadot validator's credentials directory and its contents.
+          (type ${cfg.selinux.credentialsObjectType})
+          (roletype object_r ${cfg.selinux.credentialsObjectType})
+          (filecon "${cfg.credentialsDirectory}(/.*)?" any (system_u object_r ${cfg.selinux.credentialsObjectType} (systemlow systemlow)))
 
           ${lib.optionalString (cfg.backupDirectory != "/var/backups") /* cil */ ''
             (filecon "${cfg.backupDirectory}(/.*)?" any (system_u object_r backup_store_t (systemlow systemlow)))
           ''}
 
-          ; polkadot_validator_snapshots_t governs access to snapshots.
-          (type polkadot_validator_snapshots_t)
-          (roletype object_r polkadot_validator_snapshots_t)
-          (context snapshots_context (system_u object_r polkadot_validator_snapshots_t (systemlow systemlow)))
-          (filecon "${cfg.snapshotDirectory}(/.*)?" any snapshots_context)
+          ; Defines the object type governing access to snapshots.
+          (type ${cfg.selinux.snapshotsObjectType})
+          (roletype object_r ${cfg.selinux.snapshotsObjectType})
+          (filecon "${cfg.snapshotDirectory}(/.*)?" any (system_u object_r ${cfg.selinux.snapshotsObjectType} (systemlow systemlow)))
 
           ; Allow labeling files.
-          (allow polkadot_validator_credentials_t tmpfs_t (filesystem (associate)))
-          (allow polkadot_validator_state_t fs_t (filesystem (associate)))
-          (allow polkadot_validator_snapshots_t fs_t (filesystem (associate)))
+          (allow ${cfg.selinux.credentialsObjectType} tmpfs_t (filesystem (associate)))
+          (allow ${cfg.selinux.stateObjectType} fs_t (filesystem (associate)))
+          (allow ${cfg.selinux.snapshotsObjectType} fs_t (filesystem (associate)))
 
           ; Allow systemd to configure/label the polkadot state directory.
-          (allow init_t polkadot_validator_state_t (dir (open getattr read relabelfrom relabelto search setattr)))
+          (allow init_t ${cfg.selinux.stateObjectType} (dir (open getattr read relabelfrom relabelto search setattr)))
 
           ; Allow systemd to configure/label the polkadot snapshots directory.
-          (allow init_t polkadot_validator_snapshots_t (dir (create getattr relabelfrom relabelto)))
+          (allow init_t ${cfg.selinux.snapshotsObjectType} (dir (create getattr relabelfrom relabelto)))
 
           ; Allow systemd to create the credentials directory for the polkadot validator.
-          (allow init_t polkadot_validator_credentials_t (dir (add_name create getattr mounton open read relabelto remove_name rmdir search setattr write)))
-          (allow init_t polkadot_validator_credentials_t (file (create getattr open read rename setattr unlink write)))
+          (allow init_t ${cfg.selinux.credentialsObjectType} (dir (add_name create getattr mounton open read relabelto remove_name rmdir search setattr write)))
+          (allow init_t ${cfg.selinux.credentialsObjectType} (file (create getattr open read rename setattr unlink write)))
 
-          ; Allow systemd to transition to the Polkadot Validator service domain.
+          ; Allow systemd to transition to the polkadot validator service domain.
           (allow init_t ${cfg.selinux.validatorDomainType} (process (transition)))
           (allow init_t ${cfg.selinux.validatorDomainType} (process2 (nnp_transition)))
 
-          ; Allow systemd to transition to the Polkadot Validator Orchestrator domain.
+          ; Allow systemd to transition to the polkadot validator orchestrator domain.
           (allow init_t ${cfg.selinux.orchestratorDomainType} (process (transition)))
           (allow init_t ${cfg.selinux.orchestratorDomainType} (process2 (nnp_transition)))
 
@@ -593,21 +623,21 @@
           (allow ${cfg.selinux.validatorDomainType} backup_store_t (file (create getattr ioctl open write)))
 
           ; Allow creating and restoring a snapshots.
-          (allow init_t polkadot_validator_credentials_t (file (relabelto)))
-          (allow init_t polkadot_validator_state_t (dir (add_name create write rmdir remove_name rename reparent)))
-          (allow init_t polkadot_validator_state_t (file (create getattr open read setattr unlink write)))
-          (allow init_t polkadot_validator_state_t (lnk_file (create getattr read unlink)))
+          (allow init_t ${cfg.selinux.credentialsObjectType} (file (relabelto)))
+          (allow init_t ${cfg.selinux.stateObjectType} (dir (add_name create write rmdir remove_name rename reparent)))
+          (allow init_t ${cfg.selinux.stateObjectType} (file (create getattr open read setattr unlink write)))
+          (allow init_t ${cfg.selinux.stateObjectType} (lnk_file (create getattr read unlink)))
 
           ; Allow root to inspect services.
           (allow sysadm_systemd_t ${cfg.selinux.orchestratorDomainType} (dir (search)))
           (allow sysadm_systemd_t ${cfg.selinux.orchestratorDomainType} (file (read)))
           (allow sysadm_systemd_t ${cfg.selinux.validatorDomainType} (dir (search)))
           (allow sysadm_systemd_t ${cfg.selinux.validatorDomainType} (file (getattr ioctl open read)))
-          (allow sysadm_systemd_t polkadot_validator_state_t (dir (getattr search)))
+          (allow sysadm_systemd_t ${cfg.selinux.stateObjectType} (dir (getattr search)))
 
           ; Allow root setting and unsetting node keys.
-          (allow sysadm_systemd_t secrets_t (dir (add_name remove_name search write)))
-          (allow sysadm_systemd_t secrets_t (file (create getattr open unlink write)))
+          (allow sysadm_systemd_t ${cfg.selinux.secretsObjectType} (dir (add_name remove_name search write)))
+          (allow sysadm_systemd_t ${cfg.selinux.secretsObjectType} (file (create getattr open unlink write)))
           (allow sysadm_systemd_t sysctl_vm_t (dir (search)))
           (allow sysadm_systemd_t sysctl_vm_overcommit_t (file (read)))
           (allow sysadm_systemd_t sysctl_vm_overcommit_t (file (open)))
@@ -634,8 +664,8 @@
           (allow ${cfg.selinux.orchestratorDomainType} nscd_runtime_t (dir (search)))
           (allow ${cfg.selinux.orchestratorDomainType} nscd_runtime_t (sock_file (write)))
           (allow ${cfg.selinux.orchestratorDomainType} proc_t (filesystem (getattr)))
-          (allow ${cfg.selinux.orchestratorDomainType} secrets_t (dir (search)))
-          (allow ${cfg.selinux.orchestratorDomainType} secrets_t (file (getattr open read)))
+          (allow ${cfg.selinux.orchestratorDomainType} ${cfg.selinux.secretsObjectType} (dir (search)))
+          (allow ${cfg.selinux.orchestratorDomainType} ${cfg.selinux.secretsObjectType} (file (getattr open read)))
           (allow ${cfg.selinux.orchestratorDomainType} self (capability (net_admin sys_resource)))
           (allow ${cfg.selinux.orchestratorDomainType} self (unix_dgram_socket (connect create getopt setopt write)))
           (allow ${cfg.selinux.orchestratorDomainType} sysctl_kernel_t (dir (search)))
@@ -656,12 +686,12 @@
           ; Allow to access its state directory.
           (allow ${cfg.selinux.validatorDomainType} var_lib_t (lnk_file (getattr read)))
           (allow ${cfg.selinux.validatorDomainType} var_lib_t (dir (search)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (dir (add_name create getattr mounton open read remove_name rmdir search write)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (file (append create getattr lock open read rename setattr unlink write)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.stateObjectType} (dir (add_name create getattr mounton open read remove_name rmdir search write)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.stateObjectType} (file (append create getattr lock open read rename setattr unlink write)))
 
           ; Allow to access its credentials directory.
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_credentials_t (dir (search)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_credentials_t (file (getattr open read)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.credentialsObjectType} (dir (search)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.credentialsObjectType} (file (getattr open read)))
 
           ; Allow to contact the name service caching daemon.
           (allow ${cfg.selinux.validatorDomainType} nscd_runtime_t (dir (search)))
@@ -691,9 +721,9 @@
           (allow ${cfg.selinux.validatorDomainType} init_t (file (read)))
           (allow ${cfg.selinux.validatorDomainType} init_t (lnk_file (read)))
           (allow ${cfg.selinux.validatorDomainType} init_t (unix_dgram_socket (sendto)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_rpc_port_t (tcp_socket (name_connect)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_snapshots_t (dir (add_name search write)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_snapshots_t (file (create getattr ioctl open write)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.rpcPortType} (tcp_socket (name_connect)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.snapshotsObjectType} (dir (add_name search write)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.snapshotsObjectType} (file (create getattr ioctl open write)))
           (allow ${cfg.selinux.validatorDomainType} proc_t (filesystem (getattr)))
           (allow ${cfg.selinux.validatorDomainType} self (capability (dac_override dac_read_search sys_resource)))
           (allow ${cfg.selinux.validatorDomainType} self (capability (net_admin)))
@@ -706,9 +736,9 @@
           (allow ${cfg.selinux.validatorDomainType} user_home_dir_t (dir (search)))
 
           ; Allow restoring snapshots.
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_snapshots_t (file (read)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (dir (rename reparent setattr)))
-          (allow ${cfg.selinux.validatorDomainType} polkadot_validator_state_t (lnk_file (create getattr read unlink)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.snapshotsObjectType} (file (read)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.stateObjectType} (dir (rename reparent setattr)))
+          (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.stateObjectType} (lnk_file (create getattr read unlink)))
           (allow ${cfg.selinux.validatorDomainType} self (capability (chown fowner fsetid)))
 
           ; Allow to sandbox workers.
