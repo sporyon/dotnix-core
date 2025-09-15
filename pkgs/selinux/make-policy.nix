@@ -54,6 +54,7 @@ pkgs.runCommand name {
     find . -type f -exec chmod 0644 {} +
   ''}
 
+  cp "$passwdPath" etc/passed
   cp "$selinuxConfigPath" etc/selinux/config
   cp "$semanageConfPath" etc/selinux/semanage.conf
 
@@ -61,16 +62,13 @@ pkgs.runCommand name {
     echo Installing package ${package} >&2
     find ${package}/share/selinux -name \*.cil -o -name \*.pp |
     xargs --no-run-if-empty \
-        ${pkgs.proot}/bin/proot \
-            -0 \
-            -b etc:/etc \
-            -b lib:/lib \
-            -b "$passwdPath":/etc/passwd \
-            ${pkgs.policycoreutils}/bin/semodule \
-                --verbose \
-                --noreload \
-                --store-path lib/selinux \
-                --install
+        ${pkgs.policycoreutils}/bin/semodule \
+            --store ${store} \
+            --verbose \
+            --noreload \
+            --path "$PWD/" \
+            --store-path lib/selinux \
+            --install
     if test -d ${package}/etc/selinux; then
       ${pkgs.rsync}/bin/rsync -r ${package}/etc/selinux/ etc/selinux
     fi
