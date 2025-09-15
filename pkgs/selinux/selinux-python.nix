@@ -21,12 +21,19 @@ let
   selinux-python =
     pkgs.selinux-python.overrideAttrs (old: {
       SHAREDIR = "${placeholder "out"}/share";
-      patchPhase = old.patchPhase or "" + ''
-        sed -i \
-            -e s:/usr/bin/checkmodule:${pkgs.checkpolicy}/bin/checkmodule: \
-            -e s:/usr/bin/semodule_package:${pkgs.semodule-utils}/bin/semodule_package: \
-            -e s:/usr/bin/make:${pkgs.gnumake}/bin/make: \
-            sepolgen/src/sepolgen/module.py
+      postPatch = old.postPatch or "" + ''
+        # Replace hardcoded paths.
+        substituteInPlace sepolgen/src/sepolgen/module.py --replace-fail \
+            /usr/bin/checkmodule \
+            ${pkgs.checkpolicy}/bin/checkmodule
+
+        substituteInPlace sepolgen/src/sepolgen/module.py --replace-fail \
+            /usr/bin/semodule_package \
+            ${pkgs.semodule-utils}/bin/semodule_package
+
+        substituteInPlace sepolgen/src/sepolgen/module.py --replace-fail \
+            /usr/bin/make \
+            ${pkgs.gnumake}/bin/make
       '';
       postInstall = old.postInstall or "" + ''
         install -D -t $out/${pkgs.python3.sitePackages}/selinux \
