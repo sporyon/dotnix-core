@@ -26,27 +26,31 @@
           polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
           selinux.coreutils =
             (final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; })
-              .overrideAttrs (old: final.lib.optionalAttrs (final.system == "aarch64-linux") {
+              .overrideAttrs (old: {
                 postPatch = old.postPatch or "" + ''
-                  # fails on aarch64-linux
-                  echo "int main() { return 77; }" > gnulib-tests/test-free.c
+                  ${final.lib.optionalString (final.system == "aarch64-linux") ''
+                     # fails on aarch64-linux
+                     echo "int main() { return 77; }" > gnulib-tests/test-free.c
+                  ''}
                 '';
               });
-          selinux.linux-pam = final.linux-pam.overrideAttrs (old: {
-            buildInputs = old.buildInputs or [] ++ [
-              final.libselinux
-            ];
-          });
+          selinux.linux-pam =
+            final.linux-pam.overrideAttrs (old: {
+              buildInputs = old.buildInputs or [] ++ [
+                final.libselinux
+              ];
+            });
           selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
           selinux.makePolicy = final.callPackage ./pkgs/selinux/make-policy.nix {};
           selinux.refpolicy = final.callPackage ./pkgs/selinux/refpolicy {};
           selinux.secilc = final.callPackage ./pkgs/selinux/secilc.nix {};
           selinux.selinux-python = final.callPackage ./pkgs/selinux/selinux-python.nix {};
-          selinux.systemd = (final.systemd.override { withSelinux = true; }).overrideAttrs (old: {
-            patches = old.patches or [] ++ [
-              ./pkgs/selinux/systemd/selinux-label.patch
-            ];
-          });
+          selinux.systemd =
+            (final.systemd.override { withSelinux = true; }).overrideAttrs (old: {
+              patches = old.patches or [] ++ [
+                ./pkgs/selinux/systemd/selinux-label.patch
+              ];
+            });
         };
         checks.x86_64-linux =
           inputs.nixpkgs.lib.mapAttrs'
