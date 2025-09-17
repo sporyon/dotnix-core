@@ -6,12 +6,13 @@
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } rec {
       flake = {
-        nixosConfigurations = {
-          example-aarch64-linux =
-            inputs.nixpkgs.lib.nixosSystem {
-              system = "aarch64-linux";
+        nixosConfigurations =
+          inputs.nixpkgs.lib.genAttrs' systems (system: {
+            name = "example-${system}";
+            value = inputs.nixpkgs.lib.nixosSystem {
+              inherit system;
               modules = [
                 ./example.nix
               ];
@@ -19,17 +20,7 @@
                 inherit inputs;
               };
             };
-          example-x86_64-linux =
-            inputs.nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-              modules = [
-                ./example.nix
-              ];
-              specialArgs = {
-                inherit inputs;
-              };
-            };
-        };
+          });
         nixosModules = {
           polkadot-validator = import ./nixosModules/polkadot-validator.nix;
           selinux = import ./nixosModules/selinux.nix;
