@@ -1,21 +1,35 @@
 {
   inputs = {
+    flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/092c565d333be1e17b4779ac22104338941d913f";
     polkadot.url = "github:andresilva/polkadot.nix/a2eac4baedef48acb30eb869a7f859265d89c915";
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs:
-    {
-        nixosConfigurations.example =
-          inputs.nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [
-              ./example.nix
-            ];
-            specialArgs = {
-              inherit inputs;
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      flake = {
+        nixosConfigurations = {
+          example-aarch64-linux =
+            inputs.nixpkgs.lib.nixosSystem {
+              system = "aarch64-linux";
+              modules = [
+                ./example.nix
+              ];
+              specialArgs = {
+                inherit inputs;
+              };
             };
-          };
+          example-x86_64-linux =
+            inputs.nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              modules = [
+                ./example.nix
+              ];
+              specialArgs = {
+                inherit inputs;
+              };
+            };
+        };
         nixosModules = {
           polkadot-validator = import ./nixosModules/polkadot-validator.nix;
           selinux = import ./nixosModules/selinux.nix;
@@ -52,19 +66,25 @@
               ];
             });
         };
-        checks.x86_64-linux =
+      };
+      perSystem = { system, ... }: {
+        checks =
           inputs.nixpkgs.lib.mapAttrs'
             (name: _: {
               name = inputs.nixpkgs.lib.removeSuffix ".nix" name;
               value = import (./checks + "/${name}") {
-                inherit inputs;
-                system = "x86_64-linux";
+                inherit inputs system;
               };
             })
             (builtins.readDir ./checks);
-        legacyPackages.x86_64-linux =
+        legacyPackages =
           inputs.self.overlays.default
-            inputs.nixpkgs.legacyPackages.x86_64-linux
-            inputs.nixpkgs.legacyPackages.x86_64-linux;
+            inputs.nixpkgs.legacyPackages.${system}
+            inputs.nixpkgs.legacyPackages.${system};
+      };
+      systems = [
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
     };
 }
