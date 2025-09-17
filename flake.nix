@@ -5,20 +5,18 @@
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs: {
-    checks.x86_64-linux =
-      inputs.nixpkgs.lib.mapAttrs'
-        (name: _: {
-          name = inputs.nixpkgs.lib.removeSuffix ".nix" name;
-          value = import (./checks + "/${name}") {
-            inherit inputs;
-            system = "x86_64-linux";
-          };
-        })
-        (builtins.readDir ./checks);
-
+    nixosConfigurations.example =
+      inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          ./example.nix
+        ];
+        specialArgs = {
+          inherit inputs;
+        };
+      };
     nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
     nixosModules.selinux = import ./nixosModules/selinux.nix;
-
     overlays.default = final: prev: {
       list-dependencies = final.callPackage ./pkgs/list-dependencies.nix {};
       polkadot = inputs.polkadot.packages.${final.system}.polkadot;
@@ -47,21 +45,19 @@
         ];
       });
     };
-
+    checks.x86_64-linux =
+      inputs.nixpkgs.lib.mapAttrs'
+        (name: _: {
+          name = inputs.nixpkgs.lib.removeSuffix ".nix" name;
+          value = import (./checks + "/${name}") {
+            inherit inputs;
+            system = "x86_64-linux";
+          };
+        })
+        (builtins.readDir ./checks);
     legacyPackages.x86_64-linux =
       inputs.self.overlays.default
         inputs.nixpkgs.legacyPackages.x86_64-linux
         inputs.nixpkgs.legacyPackages.x86_64-linux;
-
-    nixosConfigurations.example =
-      inputs.nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          ./example.nix
-        ];
-        specialArgs = {
-          inherit inputs;
-        };
-      };
   };
 }
