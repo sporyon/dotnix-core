@@ -9,7 +9,7 @@
     inputs.flake-parts.lib.mkFlake { inherit inputs; } rec {
       flake = {
         nixosConfigurations =
-          inputs.nixpkgs.lib.genAttrs' systems (system: {
+          (xs: f: builtins.listToAttrs (map f xs)) systems (system: {
             name = "example-${system}";
             value = inputs.nixpkgs.lib.nixosSystem {
               inherit system;
