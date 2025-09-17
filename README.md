@@ -134,9 +134,14 @@ E.g. to allow rerunning `checks.x86_64-linux.polkadot-validator-two-node-network
 
 ### Docker
 
-Build the NixOS tarball to be used in Docker:
+Build the NixOS tarball to be used in Docker for a given architecture:
 
     nix build .#nixosConfigurations.example-x86_64-linux.config.system.build.docker
+    nix build .#nixosConfigurations.example-aarch64-linux.config.system.build.docker
+
+or build it for the architecture of your currently running system:
+
+    nix build .#nixosConfigurations.example-$(uname -m)-linux.config.system.build.docker
 
 _Note: Instead of building it yourself, you can also be download the
 [tarball](https://sporyon.io/wp-content/releases/skz9djf25b3gl1y3ii8mlnaa83n22zjj-docker-image-dotnix-docker.tar.gz)
