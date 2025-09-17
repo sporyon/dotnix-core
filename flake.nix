@@ -16,8 +16,10 @@
               inherit inputs;
             };
           };
-        nixosModules.polkadot-validator = import ./nixosModules/polkadot-validator.nix;
-        nixosModules.selinux = import ./nixosModules/selinux.nix;
+        nixosModules = {
+          polkadot-validator = import ./nixosModules/polkadot-validator.nix;
+          selinux = import ./nixosModules/selinux.nix;
+        };
         overlays.default = final: prev: {
           list-dependencies = final.callPackage ./pkgs/list-dependencies.nix {};
           polkadot = inputs.polkadot.packages.${final.system}.polkadot;
