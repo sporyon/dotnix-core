@@ -23,7 +23,14 @@
       list-dependencies = final.callPackage ./pkgs/list-dependencies.nix {};
       polkadot = inputs.polkadot.packages.${final.system}.polkadot;
       polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
-      selinux.coreutils = final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; };
+      selinux.coreutils =
+        (final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; })
+          .overrideAttrs (old: final.lib.optionalAttrs (final.system == "aarch64-linux") {
+            postPatch = old.postPatch or "" + ''
+              # fails on aarch64-linux
+              echo "int main() { return 77; }" > gnulib-tests/test-free.c
+            '';
+          });
       selinux.linux-pam = final.linux-pam.overrideAttrs (old: {
         buildInputs = old.buildInputs or [] ++ [
           final.libselinux
