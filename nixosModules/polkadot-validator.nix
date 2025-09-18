@@ -479,6 +479,7 @@
           ; Allow root to log in.
           (typeattributeset can_exec_unlabeled (sysadm_systemd_t))
           (allow sysadm_systemd_t default_t (dir (search)))
+          (allow sysadm_systemd_t default_t (file (append getattr open read)))
           (allow sysadm_systemd_t kernel_t (fd (use)))
           (allow sysadm_systemd_t nscd_runtime_t (dir (search)))
           (allow sysadm_systemd_t tty_device_t (chr_file (getattr ioctl read write)))
