@@ -762,9 +762,10 @@
           (allow ${cfg.selinux.validatorDomainType} sysfs_t (lnk_file (read)))
 
           ; Allow working with sockets.
-          (allow ${cfg.selinux.validatorDomainType} self (netlink_route_socket (bind create nlmsg_read read write)))
+          (allow ${cfg.selinux.validatorDomainType} self (netlink_route_socket (bind create getattr nlmsg_read read write)))
           (allow ${cfg.selinux.validatorDomainType} self (tcp_socket (accept bind connect create getattr getopt listen read setopt shutdown write)))
           (allow ${cfg.selinux.validatorDomainType} self (udp_socket (create bind setopt write read)))
+          (allow ${cfg.selinux.validatorDomainType} self (unix_dgram_socket (ioctl)))
           (allow ${cfg.selinux.validatorDomainType} node_t (tcp_socket (node_bind)))
           (allow ${cfg.selinux.validatorDomainType} node_t (udp_socket (node_bind)))
 
