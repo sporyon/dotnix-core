@@ -942,6 +942,15 @@
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
           "--base-path=%S/polkadot-validator"
           "--node-key-file=%d/node_key"
+
+          # Secure-Validator Mode only works on x86_64
+          # See https://docs.polkadot.com/infrastructure/running-a-validator/operational-tasks/general-management/#secure-validator-mode
+          (lib.optional
+            (pkgs.system != "x86_64-linux")
+            (builtins.trace
+              "polkadot: Secure-Validator Mode not supported; using --insecure-validator-i-know-what-i-do"
+              "--insecure-validator-i-know-what-i-do"))
+
           cfg.extraArgs
         ])}";
         LoadCredential = [
