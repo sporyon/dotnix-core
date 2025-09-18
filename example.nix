@@ -11,6 +11,8 @@
         inputs.self.overlays.default
       ];
 
+      boot.kernelParams = [ "hidepid=2" ];
+
       # On a real system root would either not get a password at all or it
       # would be configured using hashedPassword.
       # For the Docker image this is good enough :)

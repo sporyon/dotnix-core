@@ -752,6 +752,7 @@
           ; Allow accessing various virtual file systems.
           (allow ${cfg.selinux.validatorDomainType} cgroup_t (dir (search)))
           (allow ${cfg.selinux.validatorDomainType} cgroup_t (file (getattr read open)))
+          (allow ${cfg.selinux.validatorDomainType} proc_t (dir (read)))
           (allow ${cfg.selinux.validatorDomainType} proc_t (file (getattr open read)))
           (allow ${cfg.selinux.validatorDomainType} sysctl_kernel_t (dir (search)))
           (allow ${cfg.selinux.validatorDomainType} sysctl_kernel_t (file (open read)))
@@ -839,11 +840,13 @@
         PrivateMounts = true;
         PrivateTmp = true;
         PrivateUsers = true;
+        ProcSubset = "pid";
         ProtectClock = true;
         ProtectControlGroups = true;
         ProtectHostname = true;
         ProtectKernelModules = true;
         ProtectKernelTunables = true;
+        ProtectProc = "invisible";
         ProtectSystem = "strict";
         RemoveIPC = true;
         RestrictAddressFamilies = "AF_INET AF_INET6 AF_NETLINK AF_UNIX";
