@@ -479,7 +479,7 @@
           ; Allow root to log in.
           (typeattributeset can_exec_unlabeled (sysadm_systemd_t))
           (allow sysadm_systemd_t default_t (dir (search)))
-          (allow sysadm_systemd_t default_t (file (append getattr open read)))
+          (allow sysadm_systemd_t default_t (file (append getattr open read write)))
           (allow sysadm_systemd_t kernel_t (fd (use)))
           (allow sysadm_systemd_t nscd_runtime_t (dir (search)))
           (allow sysadm_systemd_t tty_device_t (chr_file (getattr ioctl read write)))
@@ -488,7 +488,8 @@
           (allow sysadm_systemd_t unlabeled_t (lnk_file (read)))
 
           ; Allow basic operations.
-          (allow sysadm_systemd_t default_t (dir (getattr)))
+          (allow sysadm_systemd_t default_t (dir (add_name getattr open read write)))
+          (allow sysadm_systemd_t default_t (file (create)))
           (allow sysadm_systemd_t default_t (sock_file (getattr write)))
           (allow sysadm_systemd_t fs_t (filesystem (remount)))
           (allow sysadm_systemd_t http_port_t (tcp_socket (name_connect)))
@@ -518,6 +519,7 @@
           (allow sysadm_systemd_t tmpfs_t (file (getattr)))
           (allow sysadm_systemd_t tmpfs_t (lnk_file (create getattr read setattr unlink)))
           (allow sysadm_systemd_t tmp_t (dir (add_name create read remove_name rmdir write)))
+          (allow sysadm_systemd_t tmp_t (file (create read write)))
           (allow sysadm_systemd_t tmp_t (lnk_file (create getattr rename unlink)))
           (allow sysadm_systemd_t tty_device_t (chr_file (open)))
           (allow sysadm_systemd_t unlabeled_t (dir (add_name create open read remove_name write)))
@@ -530,6 +532,7 @@
           (allow sysadm_systemd_t user_home_t (dir (getattr search)))
           (allow sysadm_systemd_t user_home_t (file (append getattr open read setattr)))
           (allow sysadm_systemd_t user_home_t (lnk_file (read)))
+          (allow sysadm_systemd_t var_t (dir (read)))
           (allow sysadm_systemd_t var_log_t (dir (getattr search)))
           (allow sysadm_systemd_t var_run_t (dir (add_name create search write)))
           (allow sysadm_systemd_t var_run_t (file (create getattr ioctl open setattr write)))
