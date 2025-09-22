@@ -144,8 +144,8 @@ or build it for the architecture of your currently running system:
     nix build .#nixosConfigurations.example-$(uname -m)-linux.config.system.build.docker
 
 _Note: Instead of building it yourself, you can also be download the
-[tarball](https://sporyon.io/wp-content/releases/skz9djf25b3gl1y3ii8mlnaa83n22zjj-docker-image-dotnix-docker.tar.gz)
-(sha256sum:bd713187c34e4ac9316afa39b192f37e8e0da4ef18161b2b167babb1c3152a8d )._
+[tarball](https://sporyon.io/wp-content/releases/d35948lfbm284wy8r9lfghin7jh5cmhv-docker-image-dotnix-docker.tar.gz)
+(sha256sum:93f6f606177b40946f07f1a97751fca159fbffc51481af395d04858efb88bdc)._
 
 _The following step assumes that the tarball is called `./result`.  This is the
 default location when building it.  When downloading, use the appropriate path
