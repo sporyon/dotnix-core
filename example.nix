@@ -48,7 +48,7 @@
         virtualisation = {
           cores = 3;
           graphics = false;
-          memorySize = 2 * 1024;
+          memorySize = 4 * 1024;
         };
       };
     }
