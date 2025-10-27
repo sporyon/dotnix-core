@@ -42,7 +42,7 @@ inputs.nixpkgs.lib.nixos.runTest {
   };
 
   testScript = ''
-    alice.succeed("nix-build --arg system ${system} /etc/mockdep/mockdep.nix")
+    alice.succeed("nix-build --argstr system ${system} /etc/mockdep/mockdep.nix")
     alice.succeed("list-dependencies --runtime ./result | sha256sum -c /etc/mockdep.runtime.sha256sums")
     alice.succeed("list-dependencies --runtime ./result | sha256sum -c /etc/mockdep.runtime.sha256sums")
   '';
