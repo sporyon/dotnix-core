@@ -76,13 +76,19 @@
       "selinux"
     ];
 
-    security.pam.services.login.text = ''
-      auth    required pam_unix.so nullok
-      account required pam_unix.so
-      session required pam_unix.so
-      session required ${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so close
-      session required ${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so open
-    '';
+    security.pam.services.login.rules.session.selinux-close = {
+      control = "required";
+      order = config.security.pam.services.sshd.rules.session.unix.order + 1;
+      modulePath = "${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so";
+      args = ["close"];
+    };
+
+    security.pam.services.login.rules.session.selinux-open = {
+      control = "required";
+      order = config.security.pam.services.sshd.rules.session.unix.order + 2;
+      modulePath = "${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so";
+      args = ["open"];
+    };
 
     system.activationScripts.selinux = ''
       mkdir -p /var/lib/selinux
