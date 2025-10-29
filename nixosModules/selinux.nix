@@ -90,6 +90,20 @@
       args = ["open"];
     };
 
+    security.pam.services.sshd.rules.session.selinux-close = {
+      control = "required";
+      order = config.security.pam.services.sshd.rules.session.unix.order + 1;
+      modulePath = "${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so";
+      args = ["close"];
+    };
+
+    security.pam.services.sshd.rules.session.selinux-open = {
+      control = "required";
+      order = config.security.pam.services.sshd.rules.session.unix.order + 2;
+      modulePath = "${pkgs.selinux.linux-pam}/lib/security/pam_selinux.so";
+      args = ["open"];
+    };
+
     system.activationScripts.selinux = ''
       mkdir -p /var/lib/selinux
       ${pkgs.rsync}/bin/rsync \
