@@ -1,7 +1,7 @@
 {
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/092c565d333be1e17b4779ac22104338941d913f";
+    nixpkgs.url = "github:NixOS/nixpkgs/8bb5646e0bed5dbd3ab08c7a7cc15b75ab4e1d0f"; # nixos-25.11 @ 2025-11-30T17:11:29Z
     polkadot.url = "github:andresilva/polkadot.nix/a2eac4baedef48acb30eb869a7f859265d89c915";
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };

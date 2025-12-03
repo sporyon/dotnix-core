@@ -1,22 +1,23 @@
 diff --git a/src/core/selinux-setup.c b/src/core/selinux-setup.c
-index 89f736b47b..1da17ea0f5 100644
+index db14db88ee..c8a9485617 100644
 --- a/src/core/selinux-setup.c
 +++ b/src/core/selinux-setup.c
-@@ -69,12 +69,15 @@ int mac_selinux_setup(bool *loaded_policy) {
+@@ -53,6 +53,9 @@ int mac_selinux_setup(bool *loaded_policy) {
+         if (selinux_init_load_policy(&enforce) == 0) { /* NB: Apparently doesn't set useful errno! */
+                 mac_selinux_retest();
  
-                 /* Transition to the new context */
-                 r = mac_selinux_get_create_label_from_exe(SYSTEMD_BINARY_PATH, &label);
-+
 +                /* The Nix store does not support extended attributes, so use a static label instead. */
 +                const char *static_label = "system_u:system_r:init_t";
 +
-                 if (r < 0 || !label) {
+                 /* Transition to the new context */
+                 _cleanup_freecon_ char *label = NULL;
+                 r = mac_selinux_get_create_label_from_exe(SYSTEMD_BINARY_PATH, &label);
+@@ -60,7 +63,7 @@ int mac_selinux_setup(bool *loaded_policy) {
                          log_open();
-                         log_error("Failed to compute init label, ignoring.");
+                         log_warning_errno(r, "Failed to compute init label, ignoring: %m");
                  } else {
--                        r = setcon_raw(label);
--
-+                        r = setcon_raw(static_label);
+-                        r = RET_NERRNO(setcon_raw(label));
++                        r = RET_NERRNO(setcon_raw(static_label));
                          log_open();
                          if (r < 0)
-                                 log_error("Failed to transition into init label '%s', ignoring.", label);
+                                 log_warning_errno(r, "Failed to transition into init label '%s', ignoring: %m", label);
