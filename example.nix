@@ -38,9 +38,44 @@
       system.stateVersion = "24.11";
     })
 
+    # Secure Boot configuration
+    ({ inputs, ... }: {
+      imports = [
+        inputs.self.nixosModules.secure-boot
+      ];
+
+      dotnix.secure-boot.enable = true;
+    })
+
     # VM configuration
-    {
+    ({ inputs, pkgs, ... }: {
+      imports = [
+        (inputs.nixpkgs + "/nixos/modules/virtualisation/qemu-vm.nix")
+      ];
+
       virtualisation.diskSize = 32 * 1024;
+
+      # XXX warum nicht in virtualisation.vmVariant unten?
+      # XXX Secure-Boot-Zeug sollte in nixosModules/secure-boot.nix
+      #     oder in "Secure Boot configuration" oben stehen
+      virtualisation.useBootLoader = true;
+      virtualisation.useEFIBoot = true;
+      virtualisation.useSecureBoot = true;
+      virtualisation.efi.OVMF = let
+        OVMF = (pkgs.OVMF.override { secureBoot = true; }).fd;
+      in
+        OVMF // {
+          variables = pkgs.runCommand "OVMF_VARS.SecureBoot.fd" {} ''
+            ${pkgs.python3Packages.virt-firmware}/bin/virt-fw-vars \
+                -i ${OVMF.variables} \
+                -o $out \
+                --set-true SecureBoot
+          '';
+        };
+
+      # XXX folgendes kollidiert mit dotnix.secure-boot (warum steht es dann hier?)
+      #boot.loader.grub.efiSupport = true;
+      #boot.loader.systemd-boot.enable = true;
 
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
@@ -51,7 +86,7 @@
           memorySize = 4 * 1024;
         };
       };
-    }
+    })
 
     # Docker configuration
     ({ inputs, config, pkgs, ... }: {

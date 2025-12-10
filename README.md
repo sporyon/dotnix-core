@@ -172,6 +172,10 @@ Additional commands to check the running validator:
     systemctl status polkadot-validator.service
     journalctl -n 1000 -f -u polkadot-validator.service
 
+### Secure Boot
+
+WORK IN PROGRESS (see ~/.project for details)
+
 ### SELinux
 
 #### Overview
