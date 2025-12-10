@@ -44,6 +44,11 @@
               buildInputs = old.buildInputs or [] ++ [
                 final.libselinux
               ];
+              mesonFlags =
+                final.lib.remove "-Dselinux=disabled" old.mesonFlags ++ [
+                  "-Dlocalstatedir=/tmp"
+                  "-Dselinux=auto"
+                ];
             });
           selinux.makeModule = final.callPackage ./pkgs/selinux/make-module.nix {};
           selinux.makePolicy = final.callPackage ./pkgs/selinux/make-policy.nix {};
