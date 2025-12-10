@@ -131,5 +131,34 @@
 
       boot.kernelParams = [ "enforcing=1" ];
     })
+
+    # Secure Boot configuration
+    ({ inputs, pkgs, ... }: {
+      imports = [
+        inputs.self.nixosModules.secure-boot
+      ];
+
+      dotnix.secure-boot.enable = true;
+
+      # TODO move this, or parts of it, to ./nixosModules/secure-boot.nix or to "VM configuration" below
+      virtualisation.vmVariant = {
+        virtualisation = {
+          useBootLoader = true;
+          useEFIBoot = true;
+          useSecureBoot = true;
+          efi.OVMF = let
+            OVMF = (pkgs.OVMF.override { secureBoot = true; }).fd;
+          in
+            OVMF // {
+              variables = pkgs.runCommand "OVMF_VARS.SecureBoot.fd" {} ''
+                ${pkgs.python3Packages.virt-firmware}/bin/virt-fw-vars \
+                    -i ${OVMF.variables} \
+                    -o $out \
+                    --set-true SecureBoot
+              '';
+            };
+        };
+      };
+    })
   ];
 }
