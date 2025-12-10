@@ -478,6 +478,7 @@
 
           ; Allow root to log in.
           (typeattributeset can_exec_unlabeled (sysadm_systemd_t))
+          (allow init_t sysadm_systemd_t (process2 (nosuid_transition)))
           (allow sysadm_systemd_t default_t (dir (search)))
           (allow sysadm_systemd_t default_t (file (append getattr open read write)))
           (allow sysadm_systemd_t kernel_t (fd (use)))
