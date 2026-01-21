@@ -1,41 +1,67 @@
 { pkgs }:
 
 pkgs.writers.writeDashBin "generate-secrets" ''
-  # XXX hier kommt alles oder teile von setup-sb.sh
-  echo DERP
+  # NAME
+  #     generate-secrets - generate secrets lo|
+  #
+  # SYNOPSIS
+  #     generate-secrets [--autocommit] RECIPIENTS_FILE OUTPUT
+  #
+  # DESCRIPTION
+  #     Generates Secure Boot secrets, and outputs an age-encrypted tarball.
+  #
+  #     Encrypt to the recipients listed in the file at RECIPIENTS_FILE, one
+  #     recipient per line.  See age(1) for details.
+  #
+  #     OUTPUT specifies the path for the generated, encrypted tarball.
+  #
+  # EXAMPLE
+  #     generate-secrets ~/.ssh/id_ed25519.pub tmp/sbctl-keys.tar.gz.age
+  #
 
-  ...
+  set -efu
 
-  # Generate Secure Boot keys
-  /nix/store/vshcibj8d7p3z42v0d0nqsqzvhlsc3cp-coreutils-full-9.7/bin/mkdir -p tmp/sbctl
-  nix-shell -p sbctl --run 'sbctl create-keys --disable-landlock --export tmp/sbctl/keys'
+  RECIPIENTS_FILE=$(${pkgs.coreutils}/bin/realpath "$1")
+  OUTPUT_PATH=$(${pkgs.coreutils}/bin/realpath "$2")
 
-  # Create tarball and encrypt with agenix
-  cd tmp/sbctl
-  /nix/store/8av8pfs7bnyc6hqj764ns4z1fnr9bva1-gnutar-1.35/bin/tar -czf ../sbctl-keys.tar.gz keys/
-  cd ../..
+  # Check conditions
+  # RRR
+  # TODO check all preconditions
+  # 1. assert that RECIPIENTS_FILE exists (bonus level: korrect format)
+  # 2.1 does OUTPUT_PATH already exist? if yes, bail out unless --force is specified
+  # 2.2 maybe validate that OUTPUT_PATH looks right, i.e. *.tar.gz.age
+  case $OUTPUT_PATH in
+    *.tar.gz.age)
+      : # ok
+      ;;
+    *)
+      echo "error: output path ($OUTPUT_PATH) looks bad; doesn't end in .tar.gz.age" >&2
+      exit 1
+      ;;
+  esac
+  # 3.1 if --autocommit is specified, validate that OUTPUT_PATH is within a git directory
+  if ! OUTPUT_GIT_TOPLEVEL=$(${pkgs.git}/bin/git -C "$(${pkgs.coreutils}/bin/dirname "$OUTPUT_PATH")" rev-parse --show-toplevel >/dev/null); then
+    echo "error: output ($OUTPUT_PATH) not within a git repository" >&2
+    exit 1
+  fi
+  # 3.2 verify that there isn't anything staged!!
 
-  # Note: You need to manually encrypt the tarball:
-  /nix/store/8ksax0a2mxglr5hlkj2dzl556jx7xqn5-coreutils-9.7/bin/echo "Run: agenix -e secrets/sbctl-keys.age"
+  # Generate output
+  (
+    workdir=$(mktemp --tmpdir --directory generate-secrets.XXXX)
+    trap 'cd / && ${pkgs.coreutils}/bin/rm -R "$workdir"' EXIT
+    cd "$workdir"
 
-  /nix/store/8ksax0a2mxglr5hlkj2dzl556jx7xqn5-coreutils-9.7/bin/echo "Then paste the base64 content of tmp/sbctl-keys.tar.gz"
-  
-  # Generate OVMF variables
-  nix-shell -p python3Packages.virt-firmware --run '
-  workdir=$(mktemp -d)
-  trap "rm -rf $workdir" EXIT
-  mkdir -p $workdir/keys/{PK,KEK,db}
-  cp -r tmp/sbctl/keys/* $workdir/keys/
-  virt-fw-vars \
-    -i "$(nix build --print-out-paths --no-link .#nixosConfigurations.example-x86_64-linux.config.virtualisation.efi.OVMF.variables)" \
-    -o tmp/OVMF_VARS.fd \
-    --secure-boot \
-    --set-pk  8BE4DF61-93CA-11d2-AA0D-00E098032B8C $workdir/keys/PK/PK.pem \
-    --add-kek 8BE4DF61-93CA-11d2-AA0D-00E098032B8C $workdir/keys/KEK/KEK.pem \
-    --add-db  8BE4DF61-93CA-11d2-AA0D-00E098032B8C $workdir/keys/db/db.pem
-'
+    ${pkgs.sbctl}/bin/sbctl create-keys --disable-landlock --export keys
+    ${pkgs.gnutar}/bin/tar -czf keys.tar.gz keys
+    ${pkgs.age}/bin/age -e -a -R "$RECIPIENTS_FILE" -o keys.tar.gz.age keys.tar.gz
 
-# Clean up
-/nix/store/8ksax0a2mxglr5hlkj2dzl556jx7xqn5-coreutils-9.7/bin/rm -rf tmp/sbctl/keys tmp/sbctl-keys.tar.gz
+    ${pkgs.coreutils}/bin/mv keys.tar.gz.age "$OUTPUT_PATH"
+  )
 
-'
+  # Commit result
+  # RRR
+  # TODO commit only when --autocommit was specified
+  echo TODO ${pkgs.git}/bin/git -C "$OUTPUT_GIT_TOPLEVEL" add "$OUTPUT_PATH"
+  echo TODO ${pkgs.git}/bin/git -C "$OUTPUT_GIT_TOPLEVEL" commit -m "$commit_message"
+''
