@@ -58,21 +58,20 @@
       imports = [
         (inputs.nixpkgs + "/nixos/modules/profiles/qemu-guest.nix")
         (inputs.nixpkgs + "/nixos/modules/installer/cd-dvd/channel.nix")
-        (inputs.nixpkgs + "/nixos/modules/virtualisation/disk-image.nix")
       ];
       boot.kernelParams = [ "console=ttyS0" ];
       boot.loader.timeout = 0;
-      image = {
-        baseName = "nixos";
-        efiSupport = false;
-      };
       system.build.docker = pkgs.dockerTools.buildImage {
         name = "dotnix-docker";
         tag = "latest";
         copyToRoot = pkgs.buildEnv {
           name = "dotnix-docker-image-root";
           paths = [
-            pkgs.qemu
+            (pkgs.writers.writeDashBin "run-nixos-vm" ''
+              set -efu
+              ${pkgs.coreutils}/bin/install -d -m 1777 /tmp
+              exec ${config.system.build.vm}/bin/run-nixos-vm
+            '')
           ];
           pathsToLink = [
             "/bin"
@@ -80,13 +79,7 @@
         };
         config = {
           os = "linux";
-          Cmd = [
-            "qemu-system-x86_64"
-            "-enable-kvm"
-            "-drive" "file=${config.system.build.image}/nixos.qcow2,format=qcow2,if=virtio"
-            "-nographic"
-            "-m" (toString config.virtualisation.vmVariant.virtualisation.memorySize)
-          ];
+          Cmd = "run-nixos-vm";
         };
       };
     })
