@@ -32,6 +32,13 @@
           list-dependencies = final.callPackage ./pkgs/list-dependencies.nix {};
           polkadot = inputs.polkadot.packages.${final.system}.polkadot;
           polkadot-rpc = final.callPackage ./pkgs/polkadot-rpc.nix {};
+          sbctl =
+            prev.sbctl
+              .overrideAttrs (old: {
+                patches = old.patches or [] ++ [
+                  ./pkgs/sbctl.patch
+                ];
+              });
           secure-boot.staging-keys = ./pkgs/secure-boot/staging-keys;
           selinux.coreutils =
             (final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; })

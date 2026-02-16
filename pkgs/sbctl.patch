@@ -1,0 +1,26 @@
+diff --git a/cmd/sbctl/rotate-keys.go b/cmd/sbctl/rotate-keys.go
+index 82971ee..38799ca 100644
+--- a/cmd/sbctl/rotate-keys.go
++++ b/cmd/sbctl/rotate-keys.go
+@@ -94,7 +94,7 @@ func rotateCerts(state *config.State, hier hierarchy.Hierarchy, oldkeys *backend
+ func RunRotateKeys(cmd *cobra.Command, args []string) error {
+ 	state := cmd.Context().Value(stateDataKey{}).(*config.State)
+ 
+-	if err := state.Fs.MkdirAll(tmpPath, 0600); err != nil {
++	if err := state.Fs.MkdirAll(tmpPath, 0700); err != nil {
+ 		return fmt.Errorf("can't create tmp directory: %v", err)
+ 	}
+ 
+diff --git a/util.go b/util.go
+index da4a854..2a79cfd 100644
+--- a/util.go
++++ b/util.go
+@@ -184,7 +184,7 @@ func CopyDirectory(vfs afero.Fs, src, dst string) error {
+ 		relPath := strings.TrimPrefix(path, src)
+ 		newPath := filepath.Join(dst, relPath)
+ 		if info.IsDir() {
+-			if err := vfs.MkdirAll(newPath, info.Mode()); err != nil {
++			if err := vfs.MkdirAll(newPath, 0700); err != nil {
+ 				return err
+ 			}
+ 			return nil
