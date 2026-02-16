@@ -38,13 +38,18 @@
       system.stateVersion = "24.11";
     })
 
+    # Disk configuration (used by all images)
+    {
+      boot.growPartition = true;
+      systemd.services.systemd-growfs-root.wantedBy = [ "multi-user.target" ];
+    }
+
     # VM configuration
     {
       virtualisation.diskSize = 32 * 1024;
 
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
-        boot.growPartition = false;
         virtualisation = {
           cores = 3;
           graphics = false;
