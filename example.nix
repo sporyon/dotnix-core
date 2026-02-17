@@ -13,6 +13,13 @@
 
       boot.kernelParams = [ "hidepid=2" ];
 
+      # Enable rebuild within a VM
+      # usage: nixos-rebuild switch --flake /etc/nixos#example-$(uname -m)-linux
+      environment.etc.nixos.source = inputs.self;
+      environment.variables = {
+        NIX_REMOTE = "daemon";
+      };
+
       # On a real system root would either not get a password at all or it
       # would be configured using hashedPassword.
       # For the Docker image this is good enough :)
