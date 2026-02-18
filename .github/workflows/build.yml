@@ -1,0 +1,35 @@
+name: "Build"
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration_name:
+        description: "NixOS configuration name"
+        required: true
+        default: "example-x86_64-linux"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build image
+        run: |
+          image_path=$(nix run .#build-image -- .#nixosConfigurations."${{ inputs.configuration_name }}".config.system.build.diskImage)
+          echo "image_path=$image_path" >&2
+          echo "image_path=$image_path" >> "$GITHUB_ENV"
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ inputs.configuration_name }}-iso"
+          path: ${{ env.image_path }}
+          retention-days: 7
