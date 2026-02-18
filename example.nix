@@ -60,6 +60,7 @@
     {
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
+        boot.kernelParams = [ "console=ttyS0" ];
         virtualisation = {
           cores = 3;
           diskSize = 32 * 1024;
@@ -75,7 +76,6 @@
         (inputs.nixpkgs + "/nixos/modules/profiles/qemu-guest.nix")
         (inputs.nixpkgs + "/nixos/modules/installer/cd-dvd/channel.nix")
       ];
-      boot.kernelParams = [ "console=ttyS0" ];
       boot.loader.timeout = lib.mkDefault 0;
       system.build.docker = pkgs.dockerTools.buildImage {
         name = "dotnix-docker";
