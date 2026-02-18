@@ -40,6 +40,7 @@
                 ];
               });
           secure-boot.staging-keys = ./pkgs/secure-boot/staging-keys;
+          build-image = final.callPackage ./pkgs/build-image.nix {};
           selinux.coreutils =
             (final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; })
               .overrideAttrs (old: {
