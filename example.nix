@@ -54,13 +54,13 @@
     }
 
     # Docker configuration
-    ({ inputs, config, pkgs, ... }: {
+    ({ config, inputs, lib, pkgs, ... }: {
       imports = [
         (inputs.nixpkgs + "/nixos/modules/profiles/qemu-guest.nix")
         (inputs.nixpkgs + "/nixos/modules/installer/cd-dvd/channel.nix")
       ];
       boot.kernelParams = [ "console=ttyS0" ];
-      boot.loader.timeout = 0;
+      boot.loader.timeout = lib.mkDefault 0;
       system.build.docker = pkgs.dockerTools.buildImage {
         name = "dotnix-docker";
         tag = "latest";
