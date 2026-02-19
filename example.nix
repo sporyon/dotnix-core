@@ -54,12 +54,11 @@
 
     # VM configuration
     {
-      virtualisation.diskSize = 32 * 1024;
-
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
         virtualisation = {
           cores = 3;
+          diskSize = 32 * 1024;
           graphics = false;
           memorySize = 4 * 1024;
         };
