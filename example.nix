@@ -40,6 +40,14 @@
 
     # Disk configuration (used by all images)
     {
+      fileSystems."/" = {
+        device = "/dev/disk/by-label/nixos";
+        fsType = "ext4";
+      };
+      fileSystems."/boot" = {
+        device = "/dev/disk/by-label/ESP";
+        fsType = "vfat";
+      };
       boot.growPartition = true;
       systemd.services.systemd-growfs-root.wantedBy = [ "multi-user.target" ];
     }
