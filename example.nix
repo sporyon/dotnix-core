@@ -59,6 +59,33 @@
       systemd.services.systemd-growfs-root.wantedBy = [ "multi-user.target" ];
     }
 
+    # Disk image configuration
+    ({ config, inputs, lib, pkgs, ... }: {
+      # Allow booting from USB storage.
+      boot.initrd.availableKernelModules = [
+        "usb_storage"
+        "uas"
+        "scsi_mod"
+      ];
+      system.build.diskImage =
+        if !config.dotnix.secure-boot.enable then
+          throw "Secure Boot must be enabled to build images."
+        else
+          import (inputs.nixpkgs + "/nixos/lib/make-disk-image.nix") {
+            inherit config lib pkgs;
+            partitionTableType = "hybrid";
+            additionalSpace = "0M";
+            copyChannel = true;
+          };
+      system.build.diskImageCompressed =
+        pkgs.runCommand "nixos-disk-image.zst" {} ''
+          ${pkgs.coreutils}/bin/mkdir "$out"
+          ${pkgs.zstd}/bin/zstd --compress --ultra \
+              ${config.system.build.diskImage}/nixos.img \
+              -o $out/nixos.img.zst
+        '';
+    })
+
     # VM configuration
     {
       # following configuration is used only by nixos-rebuild build-vm

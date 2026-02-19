@@ -9,7 +9,7 @@ pkgs.writers.writeDashBin "build-image" ''
   #   If no flake URI is provided, the default .#example-x86_64-linux is used.
   set -efu
 
-  flake_uri=''${1-.#example-x86_64-linux}
+  flake_uri=''${1-.#nixosConfigurations.example-$(${pkgs.coreutils}/bin/uname -m)-linux.config.system.build.diskImage}
 
   image_path=$(
     ${pkgs.nixos-rebuild}/bin/nixos-rebuild build-image \
