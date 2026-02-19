@@ -56,6 +56,25 @@
       systemd.services.systemd-growfs-root.wantedBy = [ "multi-user.target" ];
     }
 
+    # Disk image configuration
+    ({ config, inputs, lib, pkgs, ... }: {
+      # Allow booting from USB storage.
+      boot.initrd.availableKernelModules = [
+        "usb_storage"
+        "uas"
+        "scsi_mod"
+      ];
+      system.build.diskImage = import (inputs.nixpkgs + "/nixos/lib/make-disk-image.nix") {
+        inherit config lib pkgs;
+        #label = "nixos";
+        partitionTableType = "hybrid";
+        #format = "raw";
+        #bootSize = "128M";
+        additionalSpace = "0M";
+        copyChannel = true;
+      };
+    })
+
     # VM configuration
     {
       # following configuration is used only by nixos-rebuild build-vm
