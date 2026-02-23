@@ -520,7 +520,7 @@
           (allow sysadm_systemd_t tmpfs_t (file (getattr)))
           (allow sysadm_systemd_t tmpfs_t (lnk_file (create getattr read setattr unlink)))
           (allow sysadm_systemd_t tmp_t (dir (add_name create read remove_name rmdir write)))
-          (allow sysadm_systemd_t tmp_t (file (create read write)))
+          (allow sysadm_systemd_t tmp_t (file (create open read setattr write)))
           (allow sysadm_systemd_t tmp_t (lnk_file (create getattr rename unlink)))
           (allow sysadm_systemd_t tty_device_t (chr_file (open)))
           (allow sysadm_systemd_t unlabeled_t (dir (add_name create open read remove_name write)))
@@ -537,7 +537,8 @@
           (allow sysadm_systemd_t var_log_t (dir (getattr search)))
           (allow sysadm_systemd_t var_run_t (dir (add_name create search write)))
           (allow sysadm_systemd_t var_run_t (file (create getattr ioctl open setattr write)))
-
+          (allow sysadm_systemd_t default_t (dir (rmdir setattr)))
+          (allow sysadm_systemd_t tmp_t (file (getattr)))
           ; Defines the object type governing access to the secrets directory and its contents.
           (type ${cfg.selinux.secretsObjectType})
           (roletype object_r ${cfg.selinux.secretsObjectType})
@@ -622,6 +623,11 @@
           ; Allow systemd to transition to the polkadot validator orchestrator domain.
           (allow init_t ${cfg.selinux.orchestratorDomainType} (process (transition)))
           (allow init_t ${cfg.selinux.orchestratorDomainType} (process2 (nnp_transition)))
+
+          ; Allow keygen and set key
+          (allow init_t ${cfg.selinux.orchestratorDomainType} (process2 (nosuid_transition)))
+          (allow init_t ${cfg.selinux.stateObjectType} (dir (ioctl)))
+          (allow init_t ${cfg.selinux.validatorDomainType} (process2 (nosuid_transition)))
 
           ; Allow creating backups.
           (allow ${cfg.selinux.validatorDomainType} backup_store_t (dir (add_name search write)))
@@ -719,6 +725,7 @@
           (allow ${cfg.selinux.validatorDomainType} unlabeled_t (lnk_file (read)))
 
           ; Allow creating snapshots.
+          (allow ${cfg.selinux.validatorDomainType} default_t (dir (search)))
           (allow ${cfg.selinux.validatorDomainType} devlog_t (sock_file (write)))
           (allow ${cfg.selinux.validatorDomainType} init_runtime_t (dir (search)))
           (allow ${cfg.selinux.validatorDomainType} init_runtime_t (sock_file (write)))
