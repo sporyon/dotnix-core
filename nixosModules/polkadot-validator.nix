@@ -862,6 +862,20 @@
         '';
       })
     ];
+    systemd.paths.polkadot-validator-orchestrator = {
+      wantedBy = [
+        "multi-user.target"
+      ];
+      pathConfig.PathChanged = cfg.keyFile;
+    };
+    systemd.paths.polkadot-validator-orchestrator-starter = {
+      wantedBy = [
+        "multi-user.target"
+      ];
+      pathConfig = {
+        PathExists = cfg.keyFile;
+      };
+    };
     systemd.services.polkadot-validator = {
       serviceConfig = {
         ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
@@ -924,18 +938,6 @@
         Documentation = "https://github.com/paritytech/polkadot";
       };
     };
-    systemd.tmpfiles.rules = [
-      "d ${builtins.dirOf cfg.keyFile} 0700 - -"
-      "d ${cfg.backupDirectory} 0700 - -"
-      "d ${cfg.snapshotDirectory} 0700 - -"
-      "d ${cfg.stateDirectory} 0700 - -"
-    ];
-    systemd.paths.polkadot-validator-orchestrator = {
-      wantedBy = [
-        "multi-user.target"
-      ];
-      pathConfig.PathChanged = cfg.keyFile;
-    };
     systemd.services.polkadot-validator-orchestrator = {
       environment = {
         CHECKSUM_FILE = "%t/checksums";
@@ -979,14 +981,6 @@
           responsible for starting, restarting, stopping the Polkadot
           Validator, respectively.
         ''}";
-      };
-    };
-    systemd.paths.polkadot-validator-orchestrator-starter = {
-      wantedBy = [
-        "multi-user.target"
-      ];
-      pathConfig = {
-        PathExists = cfg.keyFile;
       };
     };
     systemd.services.polkadot-validator-orchestrator-starter = {
@@ -1135,5 +1129,11 @@
         Description = "Polkadot Validator Snapshot Restorer";
       };
     };
+    systemd.tmpfiles.rules = [
+      "d ${builtins.dirOf cfg.keyFile} 0700 - -"
+      "d ${cfg.backupDirectory} 0700 - -"
+      "d ${cfg.snapshotDirectory} 0700 - -"
+      "d ${cfg.stateDirectory} 0700 - -"
+    ];
   };
 }
