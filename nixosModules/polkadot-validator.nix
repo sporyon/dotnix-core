@@ -470,75 +470,13 @@
     })];
     security.selinux.packages = [
       (pkgs.writeTextFile {
-        name = "system-selinux-module";
-        destination = "/share/selinux/modules/system.cil";
+        name = "polkadot-selinux-module";
+        destination = "/share/selinux/modules/polkadot.cil";
         text = /* cil */ ''
-          ;; This module contains rules needed by systemd before transitioning
-          ;; to service contexts.
+          ;; This modules contains rules needed systemd to manage the polkadot
+          ;; validator service as well as rules needed by polkadot to run
+          ;; properly.
 
-          ; Allow root to log in.
-          (typeattributeset can_exec_unlabeled (sysadm_systemd_t))
-          (allow init_t sysadm_systemd_t (process2 (nosuid_transition)))
-          (allow sysadm_systemd_t default_t (dir (search)))
-          (allow sysadm_systemd_t default_t (file (append getattr open read write)))
-          (allow sysadm_systemd_t kernel_t (fd (use)))
-          (allow sysadm_systemd_t nscd_runtime_t (dir (search)))
-          (allow sysadm_systemd_t tty_device_t (chr_file (getattr ioctl read write)))
-          (allow sysadm_systemd_t unlabeled_t (dir (getattr search)))
-          (allow sysadm_systemd_t unlabeled_t (file (entrypoint getattr execute open map read)))
-          (allow sysadm_systemd_t unlabeled_t (lnk_file (read)))
-
-          ; Allow basic operations.
-          (allow sysadm_systemd_t default_t (dir (add_name getattr open read write)))
-          (allow sysadm_systemd_t default_t (file (create)))
-          (allow sysadm_systemd_t default_t (sock_file (getattr write)))
-          (allow sysadm_systemd_t fs_t (filesystem (remount)))
-          (allow sysadm_systemd_t http_port_t (tcp_socket (name_connect)))
-          (allow sysadm_systemd_t init_runtime_t (dir (add_name create write)))
-          (allow sysadm_systemd_t init_runtime_t (fifo_file (create open read)))
-          (allow sysadm_systemd_t init_tmpfs_t (file (getattr)))
-          (allow sysadm_systemd_t init_t (system (reload status)))
-          (allow sysadm_systemd_t init_t (unix_stream_socket (connectto)))
-          (allow sysadm_systemd_t init_var_lib_t (dir (search)))
-          (allow sysadm_systemd_t init_var_lib_t (file (getattr map open read)))
-          (allow sysadm_systemd_t kernel_t (dir (getattr)))
-          (allow sysadm_systemd_t kernel_t (system (syslog_read)))
-          (allow sysadm_systemd_t kmsg_device_t (chr_file (read)))
-          (allow sysadm_systemd_t kvm_device_t (chr_file (read write)))
-          (allow sysadm_systemd_t nscd_runtime_t (sock_file (write)))
-          (allow sysadm_systemd_t nsfs_t (file (open read)))
-          (allow sysadm_systemd_t security_t (security (read_policy)))
-          (allow sysadm_systemd_t self (capability2 (syslog)))
-          (allow sysadm_systemd_t self (capability (sys_admin)))
-          (allow sysadm_systemd_t self (process (setpgid)))
-          (allow sysadm_systemd_t self (tcp_socket (getopt read write)))
-          (allow sysadm_systemd_t ssh_home_t (dir (getattr read)))
-          (allow sysadm_systemd_t systemd_journal_t (dir (getattr open read remove_name search watch write)))
-          (allow sysadm_systemd_t systemd_journal_t (file (getattr map open read unlink write)))
-          (allow sysadm_systemd_t systemd_passwd_runtime_t (dir (getattr open read watch)))
-          (allow sysadm_systemd_t tmpfs_t (dir (create rename reparent rmdir setattr)))
-          (allow sysadm_systemd_t tmpfs_t (file (getattr)))
-          (allow sysadm_systemd_t tmpfs_t (lnk_file (create getattr read setattr unlink)))
-          (allow sysadm_systemd_t tmp_t (dir (add_name create read remove_name rmdir write)))
-          (allow sysadm_systemd_t tmp_t (file (create open read setattr write)))
-          (allow sysadm_systemd_t tmp_t (lnk_file (create getattr rename unlink)))
-          (allow sysadm_systemd_t tty_device_t (chr_file (open)))
-          (allow sysadm_systemd_t unlabeled_t (dir (add_name create open read remove_name write)))
-          (allow sysadm_systemd_t unlabeled_t (file (create execute_no_trans ioctl lock open setattr unlink write)))
-          (allow sysadm_systemd_t unlabeled_t (lnk_file (create getattr rename unlink)))
-          (allow sysadm_systemd_t unlabeled_t (service (start status stop)))
-          (allow sysadm_systemd_t user_home_dir_t (dir (add_name create getattr read remove_name search write)))
-          (allow sysadm_systemd_t user_home_dir_t (file (create getattr lock open read setattr write)))
-          (allow sysadm_systemd_t user_home_dir_t (lnk_file (create getattr read rename unlink)))
-          (allow sysadm_systemd_t user_home_t (dir (getattr search)))
-          (allow sysadm_systemd_t user_home_t (file (append getattr open read setattr)))
-          (allow sysadm_systemd_t user_home_t (lnk_file (read)))
-          (allow sysadm_systemd_t var_t (dir (read)))
-          (allow sysadm_systemd_t var_log_t (dir (getattr search)))
-          (allow sysadm_systemd_t var_run_t (dir (add_name create search write)))
-          (allow sysadm_systemd_t var_run_t (file (create getattr ioctl open setattr write)))
-          (allow sysadm_systemd_t default_t (dir (rmdir setattr)))
-          (allow sysadm_systemd_t tmp_t (file (getattr)))
           ; Defines the object type governing access to the secrets directory and its contents.
           (type ${cfg.selinux.secretsObjectType})
           (roletype object_r ${cfg.selinux.secretsObjectType})
@@ -552,23 +490,6 @@
 
           ; Allow systemd to pass secrets to services.
           (allow init_t ${cfg.selinux.secretsObjectType} (dir (add_name create getattr read relabelfrom relabelto search watch write)))
-
-          ; Allow systemd to run services.
-          (allow init_t self (user_namespace (create)))
-          (allow init_t self (capability2 (checkpoint_restore audit_read)))
-          (allow init_t unlabeled_t (service (start status stop)))
-
-          ; Allow systemd to start sessions.
-          (allow init_t self (system (start stop)))
-        '';
-      })
-      (pkgs.writeTextFile {
-        name = "polkadot-selinux-module";
-        destination = "/share/selinux/modules/polkadot.cil";
-        text = /* cil */ ''
-          ;; This modules contains rules needed systemd to manage the polkadot
-          ;; validator service as well as rules needed by polkadot to run
-          ;; properly.
 
           ; Defines the SELinux domain within which the polkadot validator service runs.
           (type ${cfg.selinux.validatorDomainType})
@@ -649,9 +570,6 @@
           ; Allow root setting and unsetting node keys.
           (allow sysadm_systemd_t ${cfg.selinux.secretsObjectType} (dir (add_name remove_name search write)))
           (allow sysadm_systemd_t ${cfg.selinux.secretsObjectType} (file (create getattr open unlink write)))
-          (allow sysadm_systemd_t sysctl_vm_t (dir (search)))
-          (allow sysadm_systemd_t sysctl_vm_overcommit_t (file (read)))
-          (allow sysadm_systemd_t sysctl_vm_overcommit_t (file (open)))
 
           ; Allow to use FDs inherited from systemd.
           (allow ${cfg.selinux.orchestratorDomainType} init_t (fd (use)))
@@ -798,7 +716,6 @@
 
           ; Allow root to interactively connect to the RPC port, e.g. let the validator rotate keys.
           (allow init_t ${cfg.selinux.rpcPortType} (tcp_socket (name_connect)))
-          (allow sysadm_systemd_t self (tcp_socket (connect create getattr setopt)))
           (allow sysadm_systemd_t ${cfg.selinux.rpcPortType} (tcp_socket (name_connect)))
 
           ; Allow binding to the default polkadot prometheus port.
