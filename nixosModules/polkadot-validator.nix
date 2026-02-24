@@ -796,12 +796,14 @@
 
           ; Allow binding and connecting to the default outbound peer-to-peer networking port.
           (type ${cfg.selinux.p2pPortType})
+          (typeattributeset port_type (${cfg.selinux.p2pPortType}))
           (roletype object_r ${cfg.selinux.p2pPortType})
           (portcon tcp ${toString cfg.port} (system_u object_r ${cfg.selinux.p2pPortType} (systemlow systemlow)))
           (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.p2pPortType} (tcp_socket (name_bind name_connect)))
 
           ; Allow binding to the default polkadot RPC port.
           (type ${cfg.selinux.rpcPortType})
+          (typeattributeset port_type (${cfg.selinux.rpcPortType}))
           (roletype object_r ${cfg.selinux.rpcPortType})
           (portcon tcp ${toString cfg.rpcPort} (system_u object_r ${cfg.selinux.rpcPortType} (systemlow systemlow)))
           (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.rpcPortType} (tcp_socket (name_bind)))
@@ -812,6 +814,7 @@
 
           ; Allow binding to the default polkadot prometheus port.
           (type ${cfg.selinux.prometheusPortType})
+          (typeattributeset port_type (${cfg.selinux.prometheusPortType}))
           (roletype object_r ${cfg.selinux.prometheusPortType})
           (portcon tcp ${toString cfg.prometheusPort} (system_u object_r ${cfg.selinux.prometheusPortType} (systemlow systemlow)))
           (allow ${cfg.selinux.validatorDomainType} ${cfg.selinux.prometheusPortType} (tcp_socket (name_bind)))
