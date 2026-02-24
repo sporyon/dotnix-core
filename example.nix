@@ -121,15 +121,16 @@
 
     # Validator configuration
     ({ config, pkgs, ... }: {
-      dotnix.polkadot-validator.enable = true;
-      dotnix.polkadot-validator.name = "sporyon-dotnix-westend2";
-      dotnix.polkadot-validator.chain = "westend";
-      dotnix.polkadot-validator.extraArgs = [
+      dotnix.polkadot-validator.canonicalInstanceName = "default";
+      dotnix.polkadot-validator.instances.default.enable = true;
+      dotnix.polkadot-validator.instances.default.name = "sporyon-dotnix-westend2";
+      dotnix.polkadot-validator.instances.default.chain = "westend";
+      dotnix.polkadot-validator.instances.default.extraArgs = [
         "--db-storage-threshold=0"
       ];
 
       environment.systemPackages = [
-        config.dotnix.polkadot-validator.package
+        config.dotnix.polkadot-validator.instances.default.package
         pkgs.list-dependencies
         pkgs.polkadot-rpc
       ];
