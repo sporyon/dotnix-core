@@ -862,271 +862,275 @@
         '';
       })
     ];
-    systemd.paths.polkadot-validator-orchestrator = {
-      wantedBy = [
-        "multi-user.target"
-      ];
-      pathConfig.PathChanged = cfg.keyFile;
-    };
-    systemd.paths.polkadot-validator-orchestrator-starter = {
-      wantedBy = [
-        "multi-user.target"
-      ];
-      pathConfig = {
-        PathExists = cfg.keyFile;
-      };
-    };
-    systemd.services.polkadot-validator = {
-      serviceConfig = {
-        ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
-          "--validator"
-          (lib.optional (cfg.name != null) "--name=${cfg.name}")
-          (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
-          "--base-path=%S/polkadot-validator"
-          "--node-key-file=%d/node_key"
-
-          # Secure-Validator Mode only works on x86_64
-          # See https://docs.polkadot.com/infrastructure/running-a-validator/operational-tasks/general-management/#secure-validator-mode
-          (lib.optional
-            (pkgs.system != "x86_64-linux")
-            (builtins.trace
-              "polkadot: Secure-Validator Mode not supported; using --insecure-validator-i-know-what-i-do"
-              "--insecure-validator-i-know-what-i-do"))
-
-          cfg.extraArgs
-        ])}";
-        LoadCredential = [
-          "node_key:${cfg.keyFile}"
+    systemd.paths = {
+      polkadot-validator-orchestrator = {
+        wantedBy = [
+          "multi-user.target"
         ];
-        StateDirectory = "polkadot-validator";
-        DynamicUser = true;
-        User = "polkadot";
-        Group = "polkadot";
-        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
-        Restart = "always";
-        RestartSec = 120;
-        CapabilityBoundingSet = "";
-        LockPersonality = true;
-        NoNewPrivileges = true;
-        PrivateDevices = true;
-        PrivateMounts = true;
-        PrivateTmp = true;
-        PrivateUsers = true;
-        ProcSubset = "pid";
-        ProtectClock = true;
-        ProtectControlGroups = true;
-        ProtectHostname = true;
-        ProtectKernelModules = true;
-        ProtectKernelTunables = true;
-        ProtectProc = "invisible";
-        ProtectSystem = "strict";
-        RemoveIPC = true;
-        RestrictAddressFamilies = "AF_INET AF_INET6 AF_NETLINK AF_UNIX";
-        RestrictNamespaces = "false";
-        RestrictSUIDSGID = true;
-        SystemCallArchitectures = "native";
-        SystemCallFilter = [
-          "@system-service"
-          "landlock_add_rule landlock_create_ruleset landlock_restrict_self seccomp mount umount2"
-          "~@clock @module @reboot @swap @privileged"
-          "pivot_root"
+        pathConfig.PathChanged = cfg.keyFile;
+      };
+      polkadot-validator-orchestrator-starter = {
+        wantedBy = [
+          "multi-user.target"
         ];
-        UMask = "0027";
-      };
-      unitConfig = {
-        Description = "Polkadot Validator";
-        Documentation = "https://github.com/paritytech/polkadot";
+        pathConfig = {
+          PathExists = cfg.keyFile;
+        };
       };
     };
-    systemd.services.polkadot-validator-orchestrator = {
-      environment = {
-        CHECKSUM_FILE = "%t/checksums";
-        KEY_FILE = cfg.keyFile;
+    systemd.services = {
+      polkadot-validator = {
+        serviceConfig = {
+          ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
+            "--validator"
+            (lib.optional (cfg.name != null) "--name=${cfg.name}")
+            (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
+            "--base-path=%S/polkadot-validator"
+            "--node-key-file=%d/node_key"
+
+            # Secure-Validator Mode only works on x86_64
+            # See https://docs.polkadot.com/infrastructure/running-a-validator/operational-tasks/general-management/#secure-validator-mode
+            (lib.optional
+              (pkgs.system != "x86_64-linux")
+              (builtins.trace
+                "polkadot: Secure-Validator Mode not supported; using --insecure-validator-i-know-what-i-do"
+                "--insecure-validator-i-know-what-i-do"))
+
+            cfg.extraArgs
+          ])}";
+          LoadCredential = [
+            "node_key:${cfg.keyFile}"
+          ];
+          StateDirectory = "polkadot-validator";
+          DynamicUser = true;
+          User = "polkadot";
+          Group = "polkadot";
+          SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
+          Restart = "always";
+          RestartSec = 120;
+          CapabilityBoundingSet = "";
+          LockPersonality = true;
+          NoNewPrivileges = true;
+          PrivateDevices = true;
+          PrivateMounts = true;
+          PrivateTmp = true;
+          PrivateUsers = true;
+          ProcSubset = "pid";
+          ProtectClock = true;
+          ProtectControlGroups = true;
+          ProtectHostname = true;
+          ProtectKernelModules = true;
+          ProtectKernelTunables = true;
+          ProtectProc = "invisible";
+          ProtectSystem = "strict";
+          RemoveIPC = true;
+          RestrictAddressFamilies = "AF_INET AF_INET6 AF_NETLINK AF_UNIX";
+          RestrictNamespaces = "false";
+          RestrictSUIDSGID = true;
+          SystemCallArchitectures = "native";
+          SystemCallFilter = [
+            "@system-service"
+            "landlock_add_rule landlock_create_ruleset landlock_restrict_self seccomp mount umount2"
+            "~@clock @module @reboot @swap @privileged"
+            "pivot_root"
+          ];
+          UMask = "0027";
+        };
+        unitConfig = {
+          Description = "Polkadot Validator";
+          Documentation = "https://github.com/paritytech/polkadot";
+        };
       };
-      path = [
-        pkgs.coreutils
-        pkgs.polkadot-validator
-        pkgs.systemd
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = pkgs.writers.writeDash "polkadot-validator-orchestrator" ''
-          if test -e "$KEY_FILE"; then
-            if ! systemctl is-active --quiet polkadot-validator.service ||
-               ! sha1sum --check --status "$CHECKSUM_FILE"
-            then
-              sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
-              polkadot-validator --restart
+      polkadot-validator-orchestrator = {
+        environment = {
+          CHECKSUM_FILE = "%t/checksums";
+          KEY_FILE = cfg.keyFile;
+        };
+        path = [
+          pkgs.coreutils
+          pkgs.polkadot-validator
+          pkgs.systemd
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = pkgs.writers.writeDash "polkadot-validator-orchestrator" ''
+            if test -e "$KEY_FILE"; then
+              if ! systemctl is-active --quiet polkadot-validator.service ||
+                 ! sha1sum --check --status "$CHECKSUM_FILE"
+              then
+                sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
+                polkadot-validator --restart
+              else
+                : # nothing to do
+              fi
             else
-              : # nothing to do
+              if systemctl is-active --quiet polkadot-validator.service; then
+                polkadot-validator --stop
+                rm "$CHECKSUM_FILE"
+              else
+                : # nothing to do
+              fi
             fi
-          else
-            if systemctl is-active --quiet polkadot-validator.service; then
-              polkadot-validator --stop
-              rm "$CHECKSUM_FILE"
-            else
-              : # nothing to do
-            fi
-          fi
-        '';
-        RuntimeDirectory = "polkadot-validator-orchestrator";
-        RuntimeDirectoryPreserve = true;
-        SELinuxContext = "system_u:system_r:${cfg.selinux.orchestratorDomainType}";
+          '';
+          RuntimeDirectory = "polkadot-validator-orchestrator";
+          RuntimeDirectoryPreserve = true;
+          SELinuxContext = "system_u:system_r:${cfg.selinux.orchestratorDomainType}";
+        };
+        unitConfig = {
+          Description = "Polkadot Validator Orchestrator";
+          Documentation = "file:${pkgs.writeText "polkadot-validator-orchestrator.txt" ''
+            The Polkadot Validator Orchestrator gets active whenever the
+            Validator node key gets created, changed, or removed.  It is
+            responsible for starting, restarting, stopping the Polkadot
+            Validator, respectively.
+          ''}";
+        };
       };
-      unitConfig = {
-        Description = "Polkadot Validator Orchestrator";
-        Documentation = "file:${pkgs.writeText "polkadot-validator-orchestrator.txt" ''
-          The Polkadot Validator Orchestrator gets active whenever the
-          Validator node key gets created, changed, or removed.  It is
-          responsible for starting, restarting, stopping the Polkadot
-          Validator, respectively.
-        ''}";
-      };
-    };
-    systemd.services.polkadot-validator-orchestrator-starter = {
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${pkgs.systemd}/bin/systemctl start polkadot-validator-orchestrator";
-      };
-      unitConfig = {
-        Description = "Polkadot Validator Orchestrator Starter";
-        Documentation = "file:${pkgs.writeText "polkadot-validator-orchestrator.txt" ''
-          The Polkadot Validator Orchestrator Starter is responsible for
-          starting the Polkadot Orchestrator on systems that have a node key
-          configured but haven't experienced any key modifications.
+      polkadot-validator-orchestrator-starter = {
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.systemd}/bin/systemctl start polkadot-validator-orchestrator";
+        };
+        unitConfig = {
+          Description = "Polkadot Validator Orchestrator Starter";
+          Documentation = "file:${pkgs.writeText "polkadot-validator-orchestrator.txt" ''
+            The Polkadot Validator Orchestrator Starter is responsible for
+            starting the Polkadot Orchestrator on systems that have a node key
+            configured but haven't experienced any key modifications.
 
-          This ensures that the Polkadot Validator gets started after reboot on
-          an already configured system.
+            This ensures that the Polkadot Validator gets started after reboot on
+            an already configured system.
 
-          The separation of Polkadot Validator Orchestrator and Starter is
-          required because of how systemd's PathChange= and PathExists= work:
-          PathChange= activates its target unit once on each change while
-          PathExists= activates its target unit continuously as long as the
-          path exists.
-        ''}";
+            The separation of Polkadot Validator Orchestrator and Starter is
+            required because of how systemd's PathChange= and PathExists= work:
+            PathChange= activates its target unit once on each change while
+            PathExists= activates its target unit continuously as long as the
+            path exists.
+          ''}";
+        };
       };
-    };
-    systemd.services.polkadot-validator-backup-keystore = {
-      environment = {
-        CHAIN = cfg.chain;
-        BACKUP_DIR = cfg.backupDirectory;
+      polkadot-validator-backup-keystore = {
+        environment = {
+          CHAIN = cfg.chain;
+          BACKUP_DIR = cfg.backupDirectory;
+        };
+        path = [
+          pkgs.coreutils
+          pkgs.gnutar
+          pkgs.lz4
+          pkgs.polkadot-get_chain_path
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = pkgs.writers.writeDash "polkadot-validator-backup-keystore" ''
+            set -efu
+            chain_path=$(get_chain_path)
+            now=$(date -Is)
+            archive=$BACKUP_DIR/''${CHAIN}_keystore_$now.tar.lz4
+            tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
+            echo "$archive"
+          '';
+          SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
+          UMask = "0027";
+        };
+        unitConfig = {
+          Description = "Polkadot Validator Keystore Backupper";
+        };
       };
-      path = [
-        pkgs.coreutils
-        pkgs.gnutar
-        pkgs.lz4
-        pkgs.polkadot-get_chain_path
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = pkgs.writers.writeDash "polkadot-validator-backup-keystore" ''
-          set -efu
-          chain_path=$(get_chain_path)
-          now=$(date -Is)
-          archive=$BACKUP_DIR/''${CHAIN}_keystore_$now.tar.lz4
-          tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
-          echo "$archive"
-        '';
-        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
-        UMask = "0027";
-      };
-      unitConfig = {
-        Description = "Polkadot Validator Keystore Backupper";
-      };
-    };
-    systemd.services.polkadot-validator-snapshot-create = {
-      environment = {
-        CHAIN = cfg.chain;
-        SNAPSHOT_DIR = cfg.snapshotDirectory;
-      };
-      path = [
-        # XXX `or pkgs.emptyDirectory` is required here because there appears
-        # to be an inconsistency evaluating overlays, causing checks to fail
-        # with error: attribute 'polkadot-rpc' missing
-        (pkgs.polkadot-rpc or pkgs.emptyDirectory)
+      polkadot-validator-snapshot-create = {
+        environment = {
+          CHAIN = cfg.chain;
+          SNAPSHOT_DIR = cfg.snapshotDirectory;
+        };
+        path = [
+          # XXX `or pkgs.emptyDirectory` is required here because there appears
+          # to be an inconsistency evaluating overlays, causing checks to fail
+          # with error: attribute 'polkadot-rpc' missing
+          (pkgs.polkadot-rpc or pkgs.emptyDirectory)
 
-        pkgs.coreutils
-        pkgs.gnutar
-        pkgs.jq
-        pkgs.lz4
-        pkgs.polkadot-get_chain_path
-        pkgs.systemd
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-create" ''
-          set -efu
-          chain_path=$(get_chain_path)
-          response=$(rpc chain_getBlock)
-          block_height_base16=$(echo "$response" | jq -er .result.block.header.number)
-          block_height_base10=$(printf %d "$block_height_base16")
-          archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
-          (
-            trap 'systemctl restart polkadot-validator.service' EXIT
-            systemctl stop polkadot-validator.service
-            tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
-          )
-          echo "file://$archive"
-        '';
-        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
-        UMask = "0027";
-      };
-      unitConfig = {
-        Description = "Polkadot Validator Snapshot Creator";
-      };
-    };
-    systemd.services.polkadot-validator-snapshot-restore = {
-      environment = {
-        # POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL is set by systemctl set-environment
-      };
-      path = [
-        pkgs.coreutils
-        pkgs.curl
-        pkgs.gnutar
-        pkgs.lz4
-        pkgs.polkadot-get_chain_path
-        pkgs.systemd
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-restore" ''
-          set -efu
-          chain_path=$(get_chain_path)
-          mkdir -p "$chain_path"
-          (
-            trap 'rmdir "$chain_path"/snapshot' EXIT
-            mkdir "$chain_path"/snapshot
+          pkgs.coreutils
+          pkgs.gnutar
+          pkgs.jq
+          pkgs.lz4
+          pkgs.polkadot-get_chain_path
+          pkgs.systemd
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-create" ''
+            set -efu
+            chain_path=$(get_chain_path)
+            response=$(rpc chain_getBlock)
+            block_height_base16=$(echo "$response" | jq -er .result.block.header.number)
+            block_height_base10=$(printf %d "$block_height_base16")
+            archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
             (
-              trap 'rm "$chain_path"/snapshot/tarball' EXIT
-              case $POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL in
-                file:*)
-                  ln -s "''${POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL#file://}" "$chain_path"/snapshot/tarball
-                  ;;
-                http:*|https:*)
-                  curl "$POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL" -O "$chain_path"/snapshot/tarball
-                  ;;
-                *)
-                  echo "$0: unknown scheme: $POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL" >&2
-                  return 1
-              esac
-              tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
-              chown -R nobody:nogroup "$chain_path"/snapshot/db
+              trap 'systemctl restart polkadot-validator.service' EXIT
+              systemctl stop polkadot-validator.service
+              tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
+            )
+            echo "file://$archive"
+          '';
+          SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
+          UMask = "0027";
+        };
+        unitConfig = {
+          Description = "Polkadot Validator Snapshot Creator";
+        };
+      };
+      polkadot-validator-snapshot-restore = {
+        environment = {
+          # POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL is set by systemctl set-environment
+        };
+        path = [
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.gnutar
+          pkgs.lz4
+          pkgs.polkadot-get_chain_path
+          pkgs.systemd
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-restore" ''
+            set -efu
+            chain_path=$(get_chain_path)
+            mkdir -p "$chain_path"
+            (
+              trap 'rmdir "$chain_path"/snapshot' EXIT
+              mkdir "$chain_path"/snapshot
               (
-                trap 'systemctl restart polkadot-validator.service' EXIT
-                systemctl stop polkadot-validator.service
-                rm -fR "$chain_path"/db.backup
-                mv -T "$chain_path"/db "$chain_path"/db.backup
-                mv "$chain_path"/snapshot/db "$chain_path"/db
+                trap 'rm "$chain_path"/snapshot/tarball' EXIT
+                case $POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL in
+                  file:*)
+                    ln -s "''${POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL#file://}" "$chain_path"/snapshot/tarball
+                    ;;
+                  http:*|https:*)
+                    curl "$POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL" -O "$chain_path"/snapshot/tarball
+                    ;;
+                  *)
+                    echo "$0: unknown scheme: $POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL" >&2
+                    return 1
+                esac
+                tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
+                chown -R nobody:nogroup "$chain_path"/snapshot/db
+                (
+                  trap 'systemctl restart polkadot-validator.service' EXIT
+                  systemctl stop polkadot-validator.service
+                  rm -fR "$chain_path"/db.backup
+                  mv -T "$chain_path"/db "$chain_path"/db.backup
+                  mv "$chain_path"/snapshot/db "$chain_path"/db
+                )
               )
             )
-          )
-        '';
-        SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
-        UMask = "0027";
-      };
-      unitConfig = {
-        Description = "Polkadot Validator Snapshot Restorer";
+          '';
+          SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
+          UMask = "0027";
+        };
+        unitConfig = {
+          Description = "Polkadot Validator Snapshot Restorer";
+        };
       };
     };
     systemd.tmpfiles.rules = [
