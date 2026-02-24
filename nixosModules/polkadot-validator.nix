@@ -979,6 +979,10 @@
             "--base-path=%S/${cfg.systemd.unitName}"
             "--node-key-file=%d/node_key"
 
+            "--port=${toString cfg.port}"
+            "--prometheus-port=${toString cfg.prometheusPort}"
+            "--rpc-port=${toString cfg.rpcPort}"
+
             # Secure-Validator Mode only works on x86_64
             # See https://docs.polkadot.com/infrastructure/running-a-validator/operational-tasks/general-management/#secure-validator-mode
             (lib.optional
