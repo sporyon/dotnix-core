@@ -1,10 +1,68 @@
 { config, lib, pkgs, ... }: {
   options.dotnix.polkadot-validator = {
-    enable = lib.mkEnableOption "Polkadot validator";
+    canonicalInstanceName = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Name of the instance that should receive the canonical unit name.
+        If null, no instance is treated as canonical and all units are named
+        using their instance identifier.
+      '';
+    };
+    instances = let
+      local.types = {
+        filename = (lib.types.addCheck lib.types.str (name:
+          builtins.match "[0-9A-Za-z._][0-9A-Za-z._-]*" name != null
+        )) // {
+          description = "POSIX portable filename";
+        };
+        selinuxIdentifier = (lib.types.addCheck lib.types.str (name:
+          builtins.match "[A-Za-z_][A-Za-z0-9_]*" name != null
+        )) // {
+          description = "SELinux identifier";
+        };
+        systemdUnitName = (lib.types.addCheck lib.types.str (name:
+          builtins.match "[A-Za-z0-9:_.-]+" name != null
+        )) // {
+          description = "systemd unit name prefix";
+        };
+      };
+    in lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule (instance@{ name, ... }: let
+        cfg = instance.config;
+        isCanonical = instance.name == config.dotnix.polkadot-validator.canonicalInstanceName;
+      in {
+        options = {
+    enable = lib.mkEnableOption "Polkadot validator" // { default = true; };
+
+    controlName = lib.mkOption {
+      type = local.types.filename;
+      default =
+        if isCanonical
+          then "polkadot-validator"
+          else "polkadot-validator-${instance.name}";
+      defaultText = lib.literalMD "`polkadot-validator` if canonical instance, `polkadot-validator-<name>` otherwise";
+      description = ''
+        Name of the control command for this instance.
+      '';
+    };
+
+    systemd.unitName = lib.mkOption {
+      type = local.types.systemdUnitName;
+      default = cfg.controlName;
+      defaultText = cfg.controlName.defaultText;
+      description = ''
+        Systemd unit name for this instance.
+      '';
+    };
 
     name = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = null;
+      default =
+        if isCanonical
+          then null
+          else cfg.systemd.unitName;
+      defaultText = cfg.systemd.unitName.defaultText;
       description = ''
         The human-readable name for this node.
 
@@ -44,7 +102,8 @@
 
     port = lib.mkOption {
       type = lib.types.port;
-      default = 30333;
+      ${if isCanonical then "default" else null} = 30333;
+      defaultText = lib.literalMD "`30333` for the canonical instance, no default otherwise";
       description = ''
         Specify p2p protocol TCP port.
       '';
@@ -52,7 +111,8 @@
 
     prometheusPort = lib.mkOption {
       type = lib.types.port;
-      default = 9615;
+      ${if isCanonical then "default" else null} = 9615;
+      defaultText = lib.literalMD "`9615` for the canonical instance, no default otherwise";
       description = ''
         Specify Prometheus exporter TCP Port.
       '';
@@ -60,7 +120,8 @@
 
     rpcPort = lib.mkOption {
       type = lib.types.port;
-      default = 9944;
+      ${if isCanonical then "default" else null} = 9944;
+      defaultText = lib.literalMD "`9944` for the canonical instance, no default otherwise";
       description = ''
         Specify JSON-RPC server TCP port.
       '';
@@ -68,7 +129,7 @@
 
     keyFile = lib.mkOption {
       type = lib.types.str;
-      default = "/var/secrets/polkadot-validator.node_key";
+      default = "/var/secrets/${cfg.systemd.unitName}/node_key";
       description = ''
         Path to the Polkadot node key.
       '';
@@ -76,7 +137,7 @@
 
     sessionPubkeysFile = lib.mkOption {
       type = lib.types.str;
-      default = "/root/polkadot-validator.session_pubkeys";
+      default = "/root/${cfg.systemd.unitName}.session_pubkeys";
       description = ''
         Path for storing the session public keys.
       '';
@@ -84,7 +145,7 @@
 
     snapshotDirectory = lib.mkOption {
       type = lib.types.path;
-      default = "/var/snapshots";
+      default = "/var/snapshots/${cfg.systemd.unitName}";
       description = ''
         Path to the directory where snapshots should be created.
       '';
@@ -92,7 +153,7 @@
 
     backupDirectory = lib.mkOption {
       type = lib.types.path;
-      default = "/var/backups";
+      default = "/var/backups/${cfg.systemd.unitName}";
       description = ''
         Path to the directory where backups should be created.
       '';
@@ -100,7 +161,7 @@
 
     credentialsDirectory = lib.mkOption {
       type = lib.types.path;
-      default = "/run/credentials/polkadot-validator.service";
+      default = "/run/credentials/${cfg.systemd.unitName}.service";
       description = ''
         Path to the directory where credentials are stored.
       '';
@@ -108,116 +169,147 @@
 
     stateDirectory = lib.mkOption {
       type = lib.types.path;
-      default = "/var/lib/private/polkadot-validator";
+      default = "/var/lib/private/${cfg.systemd.unitName}";
       description = ''
         Path to the directory where state should be stored.
       '';
     };
 
+    selinux.identifierPrefix = lib.mkOption {
+      type = local.types.selinuxIdentifier;
+      default =
+        if isCanonical
+          then "polkadot_validator"
+          else "polkadot_validator_${instance.name}";
+      defaultText = lib.literalMD "`polkadot_validator` if canonical instance, `polkadot_validator_<name>` otherwise";
+      description = ''
+        Prefix used to form SELinux identifiers.
+      '';
+    };
+
     selinux.orchestratorDomainType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_validator_orchestrator_t";
+      default = "${cfg.selinux.identifierPrefix}_orchestrator_t";
       description = ''
         SELinux domain the Polkadot Validator Orchestrator should run in.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_orchestrator_t";
     };
 
     selinux.validatorDomainType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_validator_service_t";
+      default = "${cfg.selinux.identifierPrefix}_service_t";
       description = ''
         SELinux domain the Polkadot Validator should run in.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_service_t";
     };
 
     selinux.credentialsObjectType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_validator_credentials_t";
+      default = "${cfg.selinux.identifierPrefix}_credentials_t";
       description = ''
         SELinux object type of Polkadot Validator state directories and files.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_credentials_t";
     };
 
     selinux.secretsObjectType = lib.mkOption {
       type = lib.types.str;
-      default = "secrets_t";
+      default = "${cfg.selinux.identifierPrefix}_secrets_t";
       description = ''
         SELinux object type of Polkadot Validator snapshot directory and files.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_secrets_t";
     };
 
     selinux.snapshotsObjectType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_validator_snapshots_t";
+      default = "${cfg.selinux.identifierPrefix}_snapshots_t";
       description = ''
         SELinux object type of Polkadot Validator snapshot directory and files.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_snapshots_t";
     };
 
     selinux.stateObjectType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_validator_state_t";
+      default = "${cfg.selinux.identifierPrefix}_state_t";
       description = ''
         SELinux object type of Polkadot Validator state directory and files.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_state_t";
     };
 
     selinux.p2pPortType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_p2p_port_t";
+      default = "${cfg.selinux.identifierPrefix}_p2p_port_t";
       description = ''
         SELinux port type of Polkadot P2P port.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_p2p_port_t";
     };
 
     selinux.prometheusPortType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_prometheus_port_t";
+      default = "${cfg.selinux.identifierPrefix}_prometheus_port_t";
       description = ''
         SELinux port type of the Polkadot Prometheus port.
       '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_prometheus_port_t";
     };
 
     selinux.rpcPortType = lib.mkOption {
       type = lib.types.str;
-      default = "polkadot_rpc_port_t";
+      default = "${cfg.selinux.identifierPrefix}_rpc_port_t";
       description = ''
         SELinux port type of Polkadot RPC port.
+      '';
+      defaultText = lib.literalExpression "\${identifierPrefix}_rpc_port_t";
+    };
+        };
+      }));
+      default = {};
+      description = ''
+        Polkadot validator instances to be created.
       '';
     };
   };
   config = let
-    cfg = config.dotnix.polkadot-validator;
-  in lib.mkIf cfg.enable {
-    environment.systemPackages = [
-      pkgs.polkadot-validator
-    ];
-    nixpkgs.overlays = [(self: super: {
-      polkadot-validator = self.writers.writeBashBin "polkadot-validator" ''
-        # polkadot-validator - Management Utility for the Polkadot Validator
+    enabledInstances =
+      builtins.filter
+        (cfg: cfg.enable)
+        (builtins.attrValues config.dotnix.polkadot-validator.instances);
+  in {
+    environment.systemPackages = lib.flip lib.concatMap enabledInstances (cfg: [
+      pkgs.${cfg.controlName}
+    ]);
+    nixpkgs.overlays = lib.flip lib.concatMap enabledInstances (cfg: [(self: super: {
+      ${cfg.controlName} = self.writers.writeBashBin cfg.controlName /* sh */ ''
+        # ${cfg.controlName} - Management Utility for the Polkadot Validator (${cfg.systemd.unitName})
         #
         # SYNOPSIS
-        #   polkadot-validator --set-node-key
-        #   polkadot-validator --unset-node-key
+        #   ${cfg.controlName} --set-node-key
+        #   ${cfg.controlName} --unset-node-key
         #
-        #   polkadot-validator --rotate-keys
+        #   ${cfg.controlName} --rotate-keys
         #
-        #   polkadot-validator --backup-keystore
+        #   ${cfg.controlName} --backup-keystore
         #
-        #   polkadot-validator --clean-logs
-        #   polkadot-validator --restart
-        #   polkadot-validator --stop
+        #   ${cfg.controlName} --clean-logs
+        #   ${cfg.controlName} --restart
+        #   ${cfg.controlName} --stop
         #
-        #   polkadot-validator --snapshot
-        #   polkadot-validator --restore SNAPSHOT_URL
+        #   ${cfg.controlName} --snapshot
+        #   ${cfg.controlName} --restore SNAPSHOT_URL
         #
-        #   polkadot-validator --full-archive-node-setup
-        #   polkadot-validator --full-setup
-        #   polkadot-validator --prepare
-        #   polkadot-validator --update-process-exporter
-        #   polkadot-validator --update-polkadot
-        #   polkadot-validator --update-promtail
-        #   polkadot-validator --update-snapshot-script
+        #   ${cfg.controlName} --full-archive-node-setup
+        #   ${cfg.controlName} --full-setup
+        #   ${cfg.controlName} --prepare
+        #   ${cfg.controlName} --update-process-exporter
+        #   ${cfg.controlName} --update-polkadot
+        #   ${cfg.controlName} --update-promtail
+        #   ${cfg.controlName} --update-snapshot-script
         #
         set -efu
 
@@ -229,7 +321,7 @@
           (pkgs.polkadot-rpc or pkgs.emptyDirectory)
 
           self.polkadot
-          self.polkadot-get_chain_path
+          self."${cfg.controlName}-get_chain_path"
 
           self.coreutils
           self.curl
@@ -295,7 +387,7 @@
 
         # Wait until the Polkadot Validator service is ready
         wait_for_polkadot_validator() {
-          if test "$(systemctl is-active polkadot-validator.service)" != active; then
+          if test "$(systemctl is-active ${cfg.systemd.unitName}.service)" != active; then
             echo "$0: error: Polkadot Validator service not running" >&2
             return 1
           fi
@@ -327,14 +419,14 @@
 
         # Session key management
         rotate_keys() (
-          chain_path=$(get_chain_path)
+          chain_path=$(${cfg.controlName}-get_chain_path)
           session_pubkeys=$(rpc author_rotateKeys | jq -er .result)
           echo "$session_pubkeys" | tee ${lib.escapeShellArg cfg.sessionPubkeysFile}
         )
 
         # Keystore management
         backup_keystore() (
-          service=polkadot-validator-backup-keystore.service
+          service=${cfg.systemd.unitName}-backup-keystore.service
           start_time=$(date -Is)
           systemctl start "$service"
           Result=$(systemctl show "$service" -p Result | cut -d= -f2-)
@@ -363,26 +455,26 @@
           journalctl --vacuum-time=2d
         }
         restart() {
-          systemctl restart polkadot-validator.service
+          systemctl restart ${cfg.systemd.unitName}.service
         }
         stop() {
-          systemctl stop polkadot-validator.service
+          systemctl stop ${cfg.systemd.unitName}.service
         }
 
         # Database snapshot management
         snapshot() (
-          journalctl -f -n 0 -u polkadot-validator-snapshot-create.service >&2 &
+          journalctl -f -n 0 -u ${cfg.systemd.unitName}-snapshot-create.service >&2 &
           trap 'kill %1' EXIT
           start_time=$(date -Is)
-          systemctl start polkadot-validator-snapshot-create.service
-          Result=$(systemctl show polkadot-validator-snapshot-create.service -p Result | cut -d= -f2-)
-          ExecMainStatus=$(systemctl show polkadot-validator-snapshot-create.service -p ExecMainStatus | cut -d= -f2-)
+          systemctl start ${cfg.systemd.unitName}-snapshot-create.service
+          Result=$(systemctl show ${cfg.systemd.unitName}-snapshot-create.service -p Result | cut -d= -f2-)
+          ExecMainStatus=$(systemctl show ${cfg.systemd.unitName}-snapshot-create.service -p ExecMainStatus | cut -d= -f2-)
           if test "$Result" != success; then
             echo "$0: snapshot: error: failed." >&2
             exit $ExecMainStatus
           fi
           path=$(
-            journalctl --since="$start_time" -u polkadot-validator-snapshot-create.service |
+            journalctl --since="$start_time" -u ${cfg.systemd.unitName}-snapshot-create.service |
             sed -nr 's|.*(file://.*)|\1|p' | tail -n 1
           )
           if test -z "$path"; then
@@ -393,13 +485,13 @@
         )
         restore() (
           snapshot_url=$1
-          journalctl -f -n 0 -u polkadot-validator-snapshot-restore.service >&2 &
+          journalctl -f -n 0 -u ${cfg.systemd.unitName}-snapshot-restore.service >&2 &
           trap 'kill %1' EXIT
           systemctl set-environment POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL="$snapshot_url"
-          systemctl start polkadot-validator-snapshot-restore.service
+          systemctl start ${cfg.systemd.unitName}-snapshot-restore.service
           systemctl unset-environment POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL
-          Result=$(systemctl show polkadot-validator-snapshot-restore.service -p Result | cut -d= -f2-)
-          ExecMainStatus=$(systemctl show polkadot-validator-snapshot-restore.service -p Result | cut -d= -f2-)
+          Result=$(systemctl show ${cfg.systemd.unitName}-snapshot-restore.service -p Result | cut -d= -f2-)
+          ExecMainStatus=$(systemctl show ${cfg.systemd.unitName}-snapshot-restore.service -p Result | cut -d= -f2-)
           if test "$Result" != success; then
             echo "$0: restore: error: failed." >&2
             exit $ExecMainStatus
@@ -454,7 +546,7 @@
 
         main "$@"
       '';
-      polkadot-get_chain_path = pkgs.writers.writeDashBin "get_chain_path" ''
+      "${cfg.controlName}-get_chain_path" = pkgs.writers.writeDashBin "${cfg.controlName}-get_chain_path" ''
         set -efu
         spec=$(${cfg.package}/bin/polkadot build-spec ${lib.escapeShellArgs (lib.flatten [
           (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
@@ -467,11 +559,11 @@
         fi
         echo "$path"
       '';
-    })];
-    security.selinux.packages = [
+    })]);
+    security.selinux.packages = lib.flip lib.concatMap enabledInstances (cfg: [
       (pkgs.writeTextFile {
-        name = "polkadot-selinux-module";
-        destination = "/share/selinux/modules/polkadot.cil";
+        name = "${cfg.systemd.unitName}-selinux-module";
+        destination = "/share/selinux/modules/${cfg.systemd.unitName}.cil";
         text = /* cil */ ''
           ;; This modules contains rules needed systemd to manage the polkadot
           ;; validator service as well as rules needed by polkadot to run
@@ -609,7 +701,7 @@
           ; Allow retrieving file metadata.
           (allow ${cfg.selinux.validatorDomainType} fs_t (filesystem (getattr)))
 
-          ; Allow restarting polkadot-validator.service.
+          ; Allow restarting ${cfg.systemd.unitName}.service.
           (allow ${cfg.selinux.validatorDomainType} fs_t (filesystem (unmount)))
 
           ; Allow to access its state directory.
@@ -861,31 +953,30 @@
           (allow ${cfg.selinux.validatorDomainType} port_type (tcp_socket (name_connect)))
         '';
       })
-    ];
-    systemd.paths = {
-      polkadot-validator-orchestrator = {
+    ]);
+    systemd.paths =
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-orchestrator" {
         wantedBy = [
           "multi-user.target"
         ];
         pathConfig.PathChanged = cfg.keyFile;
-      };
-      polkadot-validator-orchestrator-starter = {
+      }) //
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-orchestrator-starter" {
         wantedBy = [
           "multi-user.target"
         ];
         pathConfig = {
           PathExists = cfg.keyFile;
         };
-      };
-    };
-    systemd.services = {
-      polkadot-validator = {
+      });
+    systemd.services =
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair cfg.systemd.unitName {
         serviceConfig = {
           ExecStart = "${cfg.package}/bin/polkadot ${lib.escapeShellArgs (lib.flatten [
             "--validator"
             (lib.optional (cfg.name != null) "--name=${cfg.name}")
             (lib.optional (cfg.chain != null) "--chain=${cfg.chain}")
-            "--base-path=%S/polkadot-validator"
+            "--base-path=%S/${cfg.systemd.unitName}"
             "--node-key-file=%d/node_key"
 
             # Secure-Validator Mode only works on x86_64
@@ -901,10 +992,10 @@
           LoadCredential = [
             "node_key:${cfg.keyFile}"
           ];
-          StateDirectory = "polkadot-validator";
+          StateDirectory = cfg.systemd.unitName;
           DynamicUser = true;
-          User = "polkadot";
-          Group = "polkadot";
+          User = cfg.systemd.unitName;
+          Group = cfg.systemd.unitName;
           SELinuxContext = "system_u:system_r:${cfg.selinux.validatorDomainType}";
           Restart = "always";
           RestartSec = 120;
@@ -940,39 +1031,39 @@
           Description = "Polkadot Validator";
           Documentation = "https://github.com/paritytech/polkadot";
         };
-      };
-      polkadot-validator-orchestrator = {
+      }) //
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-orchestrator" {
         environment = {
           CHECKSUM_FILE = "%t/checksums";
           KEY_FILE = cfg.keyFile;
         };
         path = [
           pkgs.coreutils
-          pkgs.polkadot-validator
+          pkgs.${cfg.controlName}
           pkgs.systemd
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = pkgs.writers.writeDash "polkadot-validator-orchestrator" ''
+          ExecStart = pkgs.writers.writeDash "${cfg.systemd.unitName}-orchestrator" ''
             if test -e "$KEY_FILE"; then
-              if ! systemctl is-active --quiet polkadot-validator.service ||
+              if ! systemctl is-active --quiet ${cfg.systemd.unitName}.service ||
                  ! sha1sum --check --status "$CHECKSUM_FILE"
               then
                 sha1sum "$KEY_FILE" > "$CHECKSUM_FILE"
-                polkadot-validator --restart
+                ${cfg.controlName} --restart
               else
                 : # nothing to do
               fi
             else
-              if systemctl is-active --quiet polkadot-validator.service; then
-                polkadot-validator --stop
+              if systemctl is-active --quiet ${cfg.systemd.unitName}.service; then
+                ${cfg.controlName} --stop
                 rm "$CHECKSUM_FILE"
               else
                 : # nothing to do
               fi
             fi
           '';
-          RuntimeDirectory = "polkadot-validator-orchestrator";
+          RuntimeDirectory = "${cfg.systemd.unitName}-orchestrator";
           RuntimeDirectoryPreserve = true;
           SELinuxContext = "system_u:system_r:${cfg.selinux.orchestratorDomainType}";
         };
@@ -985,12 +1076,12 @@
             Validator, respectively.
           ''}";
         };
-      };
-      polkadot-validator-orchestrator-starter = {
+      }) //
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-orchestrator-starter" {
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          ExecStart = "${pkgs.systemd}/bin/systemctl start polkadot-validator-orchestrator";
+          ExecStart = "${pkgs.systemd}/bin/systemctl start ${cfg.systemd.unitName}-orchestrator";
         };
         unitConfig = {
           Description = "Polkadot Validator Orchestrator Starter";
@@ -1009,8 +1100,8 @@
             path exists.
           ''}";
         };
-      };
-      polkadot-validator-backup-keystore = {
+      }) //
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-backup-keystore" {
         environment = {
           CHAIN = cfg.chain;
           BACKUP_DIR = cfg.backupDirectory;
@@ -1019,13 +1110,13 @@
           pkgs.coreutils
           pkgs.gnutar
           pkgs.lz4
-          pkgs.polkadot-get_chain_path
+          pkgs."${cfg.controlName}-get_chain_path"
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = pkgs.writers.writeDash "polkadot-validator-backup-keystore" ''
+          ExecStart = pkgs.writers.writeDash "${cfg.systemd.unitName}-backup-keystore" ''
             set -efu
-            chain_path=$(get_chain_path)
+            chain_path=$(${cfg.controlName}-get_chain_path)
             now=$(date -Is)
             archive=$BACKUP_DIR/''${CHAIN}_keystore_$now.tar.lz4
             tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" keystore >&2
@@ -1037,8 +1128,8 @@
         unitConfig = {
           Description = "Polkadot Validator Keystore Backupper";
         };
-      };
-      polkadot-validator-snapshot-create = {
+      }) //
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-snapshot-create" {
         environment = {
           CHAIN = cfg.chain;
           SNAPSHOT_DIR = cfg.snapshotDirectory;
@@ -1053,21 +1144,21 @@
           pkgs.gnutar
           pkgs.jq
           pkgs.lz4
-          pkgs.polkadot-get_chain_path
+          pkgs."${cfg.controlName}-get_chain_path"
           pkgs.systemd
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-create" ''
+          ExecStart = pkgs.writers.writeDash "${cfg.systemd.unitName}-snapshot-create" ''
             set -efu
-            chain_path=$(get_chain_path)
+            chain_path=$(${cfg.controlName}-get_chain_path)
             response=$(rpc chain_getBlock)
             block_height_base16=$(echo "$response" | jq -er .result.block.header.number)
             block_height_base10=$(printf %d "$block_height_base16")
             archive=$SNAPSHOT_DIR/''${CHAIN}_$block_height_base10.tar.lz4
             (
-              trap 'systemctl restart polkadot-validator.service' EXIT
-              systemctl stop polkadot-validator.service
+              trap 'systemctl restart ${cfg.systemd.unitName}.service' EXIT
+              systemctl stop ${cfg.systemd.unitName}.service
               tar --use-compress-program=lz4 -C "$chain_path" -v -c -f "$archive" db >&2
             )
             echo "file://$archive"
@@ -1078,8 +1169,8 @@
         unitConfig = {
           Description = "Polkadot Validator Snapshot Creator";
         };
-      };
-      polkadot-validator-snapshot-restore = {
+      }) //
+      lib.genAttrs' enabledInstances (cfg: lib.nameValuePair "${cfg.systemd.unitName}-snapshot-restore" {
         environment = {
           # POLKADOT_VALIDATOR_SNAPSHOT_RESTORE_URL is set by systemctl set-environment
         };
@@ -1088,14 +1179,14 @@
           pkgs.curl
           pkgs.gnutar
           pkgs.lz4
-          pkgs.polkadot-get_chain_path
+          pkgs."${cfg.controlName}-get_chain_path"
           pkgs.systemd
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = pkgs.writers.writeDash "polkadot-validator-snapshot-restore" ''
+          ExecStart = pkgs.writers.writeDash "${cfg.systemd.unitName}-snapshot-restore" ''
             set -efu
-            chain_path=$(get_chain_path)
+            chain_path=$(${cfg.controlName}-get_chain_path)
             mkdir -p "$chain_path"
             (
               trap 'rmdir "$chain_path"/snapshot' EXIT
@@ -1116,8 +1207,8 @@
                 tar --use-compress-program=lz4 -C "$chain_path"/snapshot -v -x -f "$chain_path"/snapshot/tarball
                 chown -R nobody:nogroup "$chain_path"/snapshot/db
                 (
-                  trap 'systemctl restart polkadot-validator.service' EXIT
-                  systemctl stop polkadot-validator.service
+                  trap 'systemctl restart ${cfg.systemd.unitName}.service' EXIT
+                  systemctl stop ${cfg.systemd.unitName}.service
                   rm -fR "$chain_path"/db.backup
                   mv -T "$chain_path"/db "$chain_path"/db.backup
                   mv "$chain_path"/snapshot/db "$chain_path"/db
@@ -1131,13 +1222,12 @@
         unitConfig = {
           Description = "Polkadot Validator Snapshot Restorer";
         };
-      };
-    };
-    systemd.tmpfiles.rules = [
+      });
+    systemd.tmpfiles.rules = lib.flip lib.concatMap enabledInstances (cfg: [
       "d ${builtins.dirOf cfg.keyFile} 0700 - -"
       "d ${cfg.backupDirectory} 0700 - -"
       "d ${cfg.snapshotDirectory} 0700 - -"
       "d ${cfg.stateDirectory} 0700 - -"
-    ];
+    ]);
   };
 }
