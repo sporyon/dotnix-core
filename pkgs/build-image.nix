@@ -5,22 +5,13 @@ pkgs.writers.writeDashBin "build-image" ''
   #   build-image [FLAKE]
   #
   # DESCRIPTION
-  #   Build an ISO image using the provided flake URI.
-  #   If no flake URI is provided, the default .#example-x86_64-linux is used.
+  #   Build an image using the provided flake URI.
   set -efu
 
-  flake_uri=''${1-.#example-x86_64-linux}
+  flake_uri=''${1-.#nixosConfigurations.example-$(${pkgs.coreutils}/bin/uname -m)-linux.config.system.build.diskImage}
 
   image_path=$(
-    ${pkgs.nixos-rebuild}/bin/nixos-rebuild build-image \
-      --image-variant iso \
-      --show-trace \
-      --print-build-logs \
-      -j 1 \
-      --flake "$flake_uri" \
-      2>&1 \
-      | ${pkgs.coreutils}/bin/tee /dev/stderr \
-      | ${pkgs.gnused}/bin/sed -nr '$s/^Done\. *The disk image can be found in //p'
+    exec ${pkgs.nix}/bin/nix build --no-link --print-build-logs --print-out-paths --show-trace "$flake_uri"
   )
 
   if [ -z "$image_path" ]; then
