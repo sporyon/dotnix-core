@@ -21,7 +21,7 @@ jobs:
 
       - name: Build image
         run: |
-          image_path=$(nix run .#build-image -- .#"${{ inputs.configuration_name }}")
+          image_path=$(nix run .#build-image -- .#nixosConfigurations."${{ inputs.configuration_name }}".config.system.build.diskImageCompressed)
           echo "image_path=${image_path}" >> "$GITHUB_ENV"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
