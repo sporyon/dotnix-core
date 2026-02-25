@@ -33,240 +33,240 @@
         isCanonical = instance.name == config.dotnix.polkadot-validator.canonicalInstanceName;
       in {
         options = {
-    enable = lib.mkEnableOption "Polkadot validator" // { default = true; };
+          enable = lib.mkEnableOption "Polkadot validator" // { default = true; };
 
-    controlName = lib.mkOption {
-      type = local.types.filename;
-      default =
-        if isCanonical
-          then "polkadot-validator"
-          else "polkadot-validator-${instance.name}";
-      defaultText = lib.literalMD "`polkadot-validator` if canonical instance, `polkadot-validator-<name>` otherwise";
-      description = ''
-        Name of the control command for this instance.
-      '';
-    };
+          controlName = lib.mkOption {
+            type = local.types.filename;
+            default =
+              if isCanonical
+                then "polkadot-validator"
+                else "polkadot-validator-${instance.name}";
+            defaultText = lib.literalMD "`polkadot-validator` if canonical instance, `polkadot-validator-<name>` otherwise";
+            description = ''
+              Name of the control command for this instance.
+            '';
+          };
 
-    systemd.unitName = lib.mkOption {
-      type = local.types.systemdUnitName;
-      default = cfg.controlName;
-      defaultText = cfg.controlName.defaultText;
-      description = ''
-        Systemd unit name for this instance.
-      '';
-    };
+          systemd.unitName = lib.mkOption {
+            type = local.types.systemdUnitName;
+            default = cfg.controlName;
+            defaultText = cfg.controlName.defaultText;
+            description = ''
+              Systemd unit name for this instance.
+            '';
+          };
 
-    name = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default =
-        if isCanonical
-          then null
-          else cfg.systemd.unitName;
-      defaultText = cfg.systemd.unitName.defaultText;
-      description = ''
-        The human-readable name for this node.
+          name = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default =
+              if isCanonical
+                then null
+                else cfg.systemd.unitName;
+            defaultText = cfg.systemd.unitName.defaultText;
+            description = ''
+              The human-readable name for this node.
 
-        It's used as network node name.
-      '';
-    };
+              It's used as network node name.
+            '';
+          };
 
-    chain = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
-      description = ''
-        Specify the chain specification.
+          chain = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = ''
+              Specify the chain specification.
 
-        It can be one of the predefined ones (dev, local, or staging) or it
-        can be a path to a file with the chainspec (such as one exported by
-        the `build-spec` subcommand).
-      '';
-    };
+              It can be one of the predefined ones (dev, local, or staging) or it
+              can be a path to a file with the chainspec (such as one exported by
+              the `build-spec` subcommand).
+            '';
+          };
 
-    extraArgs = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [];
-      example = ["--sync=fast"];
-      description = ''
-        Additional arguments to be passed to polkadot.
-      '';
-    };
+          extraArgs = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            example = ["--sync=fast"];
+            description = ''
+              Additional arguments to be passed to polkadot.
+            '';
+          };
 
-    package = lib.mkOption {
-      type = lib.types.package;
-      default = pkgs.polkadot;
-      defaultText = lib.literalExpression "pkgs.polkadot";
-      description = ''
-        Polkadot package to use.
-      '';
-    };
+          package = lib.mkOption {
+            type = lib.types.package;
+            default = pkgs.polkadot;
+            defaultText = lib.literalExpression "pkgs.polkadot";
+            description = ''
+              Polkadot package to use.
+            '';
+          };
 
-    port = lib.mkOption {
-      type = lib.types.port;
-      ${if isCanonical then "default" else null} = 30333;
-      defaultText = lib.literalMD "`30333` for the canonical instance, no default otherwise";
-      description = ''
-        Specify p2p protocol TCP port.
-      '';
-    };
+          port = lib.mkOption {
+            type = lib.types.port;
+            ${if isCanonical then "default" else null} = 30333;
+            defaultText = lib.literalMD "`30333` for the canonical instance, no default otherwise";
+            description = ''
+              Specify p2p protocol TCP port.
+            '';
+          };
 
-    prometheusPort = lib.mkOption {
-      type = lib.types.port;
-      ${if isCanonical then "default" else null} = 9615;
-      defaultText = lib.literalMD "`9615` for the canonical instance, no default otherwise";
-      description = ''
-        Specify Prometheus exporter TCP Port.
-      '';
-    };
+          prometheusPort = lib.mkOption {
+            type = lib.types.port;
+            ${if isCanonical then "default" else null} = 9615;
+            defaultText = lib.literalMD "`9615` for the canonical instance, no default otherwise";
+            description = ''
+              Specify Prometheus exporter TCP Port.
+            '';
+          };
 
-    rpcPort = lib.mkOption {
-      type = lib.types.port;
-      ${if isCanonical then "default" else null} = 9944;
-      defaultText = lib.literalMD "`9944` for the canonical instance, no default otherwise";
-      description = ''
-        Specify JSON-RPC server TCP port.
-      '';
-    };
+          rpcPort = lib.mkOption {
+            type = lib.types.port;
+            ${if isCanonical then "default" else null} = 9944;
+            defaultText = lib.literalMD "`9944` for the canonical instance, no default otherwise";
+            description = ''
+              Specify JSON-RPC server TCP port.
+            '';
+          };
 
-    keyFile = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/secrets/${cfg.systemd.unitName}/node_key";
-      description = ''
-        Path to the Polkadot node key.
-      '';
-    };
+          keyFile = lib.mkOption {
+            type = lib.types.str;
+            default = "/var/secrets/${cfg.systemd.unitName}/node_key";
+            description = ''
+              Path to the Polkadot node key.
+            '';
+          };
 
-    sessionPubkeysFile = lib.mkOption {
-      type = lib.types.str;
-      default = "/root/${cfg.systemd.unitName}.session_pubkeys";
-      description = ''
-        Path for storing the session public keys.
-      '';
-    };
+          sessionPubkeysFile = lib.mkOption {
+            type = lib.types.str;
+            default = "/root/${cfg.systemd.unitName}.session_pubkeys";
+            description = ''
+              Path for storing the session public keys.
+            '';
+          };
 
-    snapshotDirectory = lib.mkOption {
-      type = lib.types.path;
-      default = "/var/snapshots/${cfg.systemd.unitName}";
-      description = ''
-        Path to the directory where snapshots should be created.
-      '';
-    };
+          snapshotDirectory = lib.mkOption {
+            type = lib.types.path;
+            default = "/var/snapshots/${cfg.systemd.unitName}";
+            description = ''
+              Path to the directory where snapshots should be created.
+            '';
+          };
 
-    backupDirectory = lib.mkOption {
-      type = lib.types.path;
-      default = "/var/backups/${cfg.systemd.unitName}";
-      description = ''
-        Path to the directory where backups should be created.
-      '';
-    };
+          backupDirectory = lib.mkOption {
+            type = lib.types.path;
+            default = "/var/backups/${cfg.systemd.unitName}";
+            description = ''
+              Path to the directory where backups should be created.
+            '';
+          };
 
-    credentialsDirectory = lib.mkOption {
-      type = lib.types.path;
-      default = "/run/credentials/${cfg.systemd.unitName}.service";
-      description = ''
-        Path to the directory where credentials are stored.
-      '';
-    };
+          credentialsDirectory = lib.mkOption {
+            type = lib.types.path;
+            default = "/run/credentials/${cfg.systemd.unitName}.service";
+            description = ''
+              Path to the directory where credentials are stored.
+            '';
+          };
 
-    stateDirectory = lib.mkOption {
-      type = lib.types.path;
-      default = "/var/lib/private/${cfg.systemd.unitName}";
-      description = ''
-        Path to the directory where state should be stored.
-      '';
-    };
+          stateDirectory = lib.mkOption {
+            type = lib.types.path;
+            default = "/var/lib/private/${cfg.systemd.unitName}";
+            description = ''
+              Path to the directory where state should be stored.
+            '';
+          };
 
-    selinux.identifierPrefix = lib.mkOption {
-      type = local.types.selinuxIdentifier;
-      default =
-        if isCanonical
-          then "polkadot_validator"
-          else "polkadot_validator_${instance.name}";
-      defaultText = lib.literalMD "`polkadot_validator` if canonical instance, `polkadot_validator_<name>` otherwise";
-      description = ''
-        Prefix used to form SELinux identifiers.
-      '';
-    };
+          selinux.identifierPrefix = lib.mkOption {
+            type = local.types.selinuxIdentifier;
+            default =
+              if isCanonical
+                then "polkadot_validator"
+                else "polkadot_validator_${instance.name}";
+            defaultText = lib.literalMD "`polkadot_validator` if canonical instance, `polkadot_validator_<name>` otherwise";
+            description = ''
+              Prefix used to form SELinux identifiers.
+            '';
+          };
 
-    selinux.orchestratorDomainType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_orchestrator_t";
-      description = ''
-        SELinux domain the Polkadot Validator Orchestrator should run in.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_orchestrator_t";
-    };
+          selinux.orchestratorDomainType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_orchestrator_t";
+            description = ''
+              SELinux domain the Polkadot Validator Orchestrator should run in.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_orchestrator_t";
+          };
 
-    selinux.validatorDomainType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_service_t";
-      description = ''
-        SELinux domain the Polkadot Validator should run in.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_service_t";
-    };
+          selinux.validatorDomainType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_service_t";
+            description = ''
+              SELinux domain the Polkadot Validator should run in.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_service_t";
+          };
 
-    selinux.credentialsObjectType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_credentials_t";
-      description = ''
-        SELinux object type of Polkadot Validator state directories and files.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_credentials_t";
-    };
+          selinux.credentialsObjectType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_credentials_t";
+            description = ''
+              SELinux object type of Polkadot Validator state directories and files.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_credentials_t";
+          };
 
-    selinux.secretsObjectType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_secrets_t";
-      description = ''
-        SELinux object type of Polkadot Validator snapshot directory and files.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_secrets_t";
-    };
+          selinux.secretsObjectType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_secrets_t";
+            description = ''
+              SELinux object type of Polkadot Validator snapshot directory and files.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_secrets_t";
+          };
 
-    selinux.snapshotsObjectType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_snapshots_t";
-      description = ''
-        SELinux object type of Polkadot Validator snapshot directory and files.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_snapshots_t";
-    };
+          selinux.snapshotsObjectType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_snapshots_t";
+            description = ''
+              SELinux object type of Polkadot Validator snapshot directory and files.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_snapshots_t";
+          };
 
-    selinux.stateObjectType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_state_t";
-      description = ''
-        SELinux object type of Polkadot Validator state directory and files.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_state_t";
-    };
+          selinux.stateObjectType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_state_t";
+            description = ''
+              SELinux object type of Polkadot Validator state directory and files.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_state_t";
+          };
 
-    selinux.p2pPortType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_p2p_port_t";
-      description = ''
-        SELinux port type of Polkadot P2P port.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_p2p_port_t";
-    };
+          selinux.p2pPortType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_p2p_port_t";
+            description = ''
+              SELinux port type of Polkadot P2P port.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_p2p_port_t";
+          };
 
-    selinux.prometheusPortType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_prometheus_port_t";
-      description = ''
-        SELinux port type of the Polkadot Prometheus port.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_prometheus_port_t";
-    };
+          selinux.prometheusPortType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_prometheus_port_t";
+            description = ''
+              SELinux port type of the Polkadot Prometheus port.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_prometheus_port_t";
+          };
 
-    selinux.rpcPortType = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.selinux.identifierPrefix}_rpc_port_t";
-      description = ''
-        SELinux port type of Polkadot RPC port.
-      '';
-      defaultText = lib.literalExpression "\${identifierPrefix}_rpc_port_t";
-    };
+          selinux.rpcPortType = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.selinux.identifierPrefix}_rpc_port_t";
+            description = ''
+              SELinux port type of Polkadot RPC port.
+            '';
+            defaultText = lib.literalExpression "\${identifierPrefix}_rpc_port_t";
+          };
         };
       }));
       default = {};
