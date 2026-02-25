@@ -8,7 +8,7 @@ pkgs.writers.writeDashBin "build-image" ''
   #   Build an image using the provided flake URI.
   set -efu
 
-  flake_uri=''${1-.#nixosConfigurations.example-$(${pkgs.coreutils}/bin/uname -m)-linux.config.system.build.diskImage}
+  flake_uri=''${1-.#nixosConfigurations.example-$(${pkgs.coreutils}/bin/uname -m)-linux.config.system.build.diskImageCompressed}
 
   image_path=$(
     exec ${pkgs.nix}/bin/nix build --no-link --print-build-logs --print-out-paths --show-trace "$flake_uri"

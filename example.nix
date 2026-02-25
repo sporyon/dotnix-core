@@ -73,6 +73,13 @@
         additionalSpace = "0M";
         copyChannel = true;
       };
+      system.build.diskImageCompressed =
+        pkgs.runCommand "nixos-disk-image.zst" {} ''
+          ${pkgs.coreutils}/bin/mkdir "$out"
+          ${pkgs.zstd}/bin/zstd --compress --ultra \
+              ${config.system.build.diskImage}/nixos.img \
+              -o $out/nixos.img.zst
+        '';
     })
 
     # VM configuration
