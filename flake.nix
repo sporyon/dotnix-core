@@ -4,7 +4,7 @@
     lanzaboote.url = "github:nix-community/lanzaboote/v1.0.0";
     lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs.url = "github:NixOS/nixpkgs/1267bb4920d0fc06ea916734c11b0bf004bbe17e"; # nixos-25.11 @ 2026-02-25T19:16:40Z
-    polkadot.url = "github:andresilva/polkadot.nix/a2eac4baedef48acb30eb869a7f859265d89c915";
+    polkadot.url = "github:andresilva/polkadot.nix/8ca6b6a149621d7f9f51884399ec863292f66362"; # 2026-03-02T09:24:12Z
     polkadot.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs:

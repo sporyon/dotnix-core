@@ -171,17 +171,17 @@
         "zombienet": "zombienet"
       },
       "locked": {
-        "lastModified": 1757334410,
-        "narHash": "sha256-M+nikVNJTd40RNemMZEWmvzyqL38uRSWTwfUq7fNBdo=",
+        "lastModified": 1772443452,
+        "narHash": "sha256-ecaboE6wvyLjcHT9jgFy6urC0ds+f7G51Bt78hGDCm0=",
         "owner": "andresilva",
         "repo": "polkadot.nix",
-        "rev": "a2eac4baedef48acb30eb869a7f859265d89c915",
+        "rev": "8ca6b6a149621d7f9f51884399ec863292f66362",
         "type": "github"
       },
       "original": {
         "owner": "andresilva",
         "repo": "polkadot.nix",
-        "rev": "a2eac4baedef48acb30eb869a7f859265d89c915",
+        "rev": "8ca6b6a149621d7f9f51884399ec863292f66362",
         "type": "github"
       }
     },
