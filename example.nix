@@ -13,9 +13,6 @@
 
       boot.kernelParams = [ "hidepid=2" ];
 
-      # Enable rebuild within a VM
-      # usage: nixos-rebuild switch --flake /etc/nixos#example-$(uname -m)-linux
-      environment.etc.nixos.source = inputs.self;
       environment.variables = {
         NIX_REMOTE = "daemon";
       };
@@ -87,7 +84,7 @@
     })
 
     # VM configuration
-    {
+    ({ config, inputs, pkgs, ... }: {
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
         boot.kernelParams = [ "console=ttyS0" ];
@@ -97,8 +94,31 @@
           graphics = false;
           memorySize = 4 * 1024;
         };
+
+        # Enable nixos-rebuild within a VM
+        system.activationScripts.nixos-config = let
+          flake = pkgs.writeText "nixos-config" /* nix */ ''
+            {
+              inputs.dotnix-core.url = ${builtins.toJSON inputs.self};
+              outputs = inputs: {
+                nixosConfigurations.${builtins.toJSON config.networking.hostName} = let
+                  base = inputs.dotnix-core.nixosConfigurations.${builtins.toJSON "example-${config.nixpkgs.system}"};
+                in base.extendModules {
+                  modules = [
+                    # Ensure that rebuilds stay fit for the VM.
+                    {
+                      boot.kernelParams = [ "console=ttyS0" ];
+                    }
+                  ];
+                };
+              };
+            }
+          '';
+        in /* sh */ ''
+          cp --update=none -L ${flake} /etc/nixos/flake.nix
+        '';
       };
-    }
+    })
 
     # Docker configuration
     ({ config, inputs, lib, pkgs, ... }: {
