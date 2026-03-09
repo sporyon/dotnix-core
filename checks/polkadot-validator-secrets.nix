@@ -20,16 +20,17 @@ inputs.nixpkgs.lib.nixos.runTest {
       ];
 
       # Validator configuration.
-      dotnix.polkadot-validator.enable = true;
-      dotnix.polkadot-validator.name = "alice";
-      dotnix.polkadot-validator.chain = "westend";
-      dotnix.polkadot-validator.extraArgs = [
+      dotnix.polkadot-validator.canonicalInstanceName = "default";
+      dotnix.polkadot-validator.instances.default.enable = true;
+      dotnix.polkadot-validator.instances.default.name = "alice";
+      dotnix.polkadot-validator.instances.default.chain = "westend";
+      dotnix.polkadot-validator.instances.default.extraArgs = [
         "--db-storage-threshold=0"
       ];
 
       # Helper utilities to be used in testScript.
       environment.systemPackages = [
-        config.dotnix.polkadot-validator.package
+        config.dotnix.polkadot-validator.instances.default.package
         pkgs.coreutils
         pkgs.diffutils
         pkgs.systemd
@@ -46,13 +47,14 @@ inputs.nixpkgs.lib.nixos.runTest {
       ];
 
       # Validator configuration.
-      dotnix.polkadot-validator.enable = true;
-      dotnix.polkadot-validator.name = "bob";
-      dotnix.polkadot-validator.chain = "westend";
-      dotnix.polkadot-validator.extraArgs = [
+      dotnix.polkadot-validator.canonicalInstanceName = "default";
+      dotnix.polkadot-validator.instances.default.enable = true;
+      dotnix.polkadot-validator.instances.default.name = "bob";
+      dotnix.polkadot-validator.instances.default.chain = "westend";
+      dotnix.polkadot-validator.instances.default.extraArgs = [
         "--db-storage-threshold=0"
       ];
-      dotnix.polkadot-validator.keyFile =
+      dotnix.polkadot-validator.instances.default.keyFile =
         toString (pkgs.writeText "dummysecret" "0000000000000000000000000000000000000000000000000000000000000000");
 
       # Helper utilities to be used in testScript.

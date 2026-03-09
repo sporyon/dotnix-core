@@ -17,16 +17,17 @@ inputs.nixpkgs.lib.nixos.runTest {
     ];
 
     # Validator configuration.
-    dotnix.polkadot-validator.enable = true;
-    dotnix.polkadot-validator.name = "alice";
-    dotnix.polkadot-validator.chain = "westend";
-    dotnix.polkadot-validator.extraArgs = [
+    dotnix.polkadot-validator.canonicalInstanceName = "default";
+    dotnix.polkadot-validator.instances.default.enable = true;
+    dotnix.polkadot-validator.instances.default.name = "alice";
+    dotnix.polkadot-validator.instances.default.chain = "westend";
+    dotnix.polkadot-validator.instances.default.extraArgs = [
       "--db-storage-threshold=0"
     ];
 
     # Helper utilities to be used in testScript.
     environment.systemPackages = [
-      config.dotnix.polkadot-validator.package
+      config.dotnix.polkadot-validator.instances.default.package
       pkgs.libselinux
       pkgs.polkadot-rpc
       pkgs.selinux.coreutils
@@ -51,24 +52,24 @@ inputs.nixpkgs.lib.nixos.runTest {
 
     # Prepare some secrets to test the permissions of the root user.
     # This assumes secrets are stored in /var/secrets, which is the default case.
-    alice.succeed("runcon root:sysadm_r:sysadm_systemd_t touch /var/secrets/testsecret1")
+    alice.succeed("runcon root:sysadm_r:sysadm_systemd_t touch /var/secrets/polkadot-validator/testsecret1")
 
     # Show that in permissive mode, root can read root secrets
-    alice.succeed("runcon root:sysadm_r:sysadm_systemd_t cat /var/secrets/testsecret1")
+    alice.succeed("runcon root:sysadm_r:sysadm_systemd_t cat /var/secrets/polkadot-validator/testsecret1")
 
     # Turn on enforcing.
     # From here on, all tests run with SELinux rulse enforced.
     alice.succeed("setenforce 1")
 
     # Ensure root can (still) write secrets.
-    alice.succeed("runcon root:sysadm_r:sysadm_systemd_t touch /var/secrets/testsecret2")
+    alice.succeed("runcon root:sysadm_r:sysadm_systemd_t touch /var/secrets/polkadot-validator/testsecret2")
 
     # Set some generated node keys to start the validator.
     alice.succeed("polkadot key generate-node-key | runcon root:sysadm_r:sysadm_systemd_t polkadot-validator --set-node-key")
 
     # Ensure the node key exists now and root cannot read it.
-    alice.succeed("test -e /var/secrets/polkadot-validator.node_key")
-    alice.fail("runcon root:sysadm_r:sysadm_systemd_t cat /var/secrets/polkadot-validator.node_key")
+    alice.succeed("test -e /var/secrets/polkadot-validator/node_key")
+    alice.fail("runcon root:sysadm_r:sysadm_systemd_t cat /var/secrets/polkadot-validator/node_key")
 
     # Ensure root can neither read nor write polkadot-validator's state.
     #
