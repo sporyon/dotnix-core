@@ -136,7 +136,7 @@
     })
 
     # Docker configuration
-    ({ config, inputs, lib, pkgs, ... }: {
+    ({ config, inputs, lib, options, pkgs, ... }: {
       imports = [
         (inputs.nixpkgs + "/nixos/modules/profiles/qemu-guest.nix")
         (inputs.nixpkgs + "/nixos/modules/installer/cd-dvd/channel.nix")
@@ -151,6 +151,12 @@
             (pkgs.writers.writeDashBin "run-nixos-vm" ''
               set -efu
               ${pkgs.coreutils}/bin/install -d -m 1777 /tmp
+              ${lib.optionalString (options.dotnix?secure-boot && config.dotnix.secure-boot.enable) /* sh */ ''
+                if test -d /shared; then
+                  export NIX_DISK_IMAGE=''${NIX_DISK_IMAGE-/shared/nixos.qcow2}
+                  export NIX_EFI_VARS=''${NIX_EFI_VARS-/shared/OVMF_VARS.fd}
+                fi
+              ''}
               exec ${config.system.build.vm}/bin/run-nixos-vm
             '')
           ];
