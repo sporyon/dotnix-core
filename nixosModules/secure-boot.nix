@@ -49,5 +49,24 @@
         '';
       })
     ];
+
+    virtualisation.vmVariant = {
+      virtualisation = {
+        useBootLoader = true;
+        useEFIBoot = true;
+        useSecureBoot = true;
+        efi.OVMF = let
+          OVMF = (pkgs.OVMF.override { secureBoot = true; }).fd;
+        in
+          OVMF // {
+            variables = pkgs.runCommand "OVMF_VARS.SecureBoot.fd" {} ''
+              ${pkgs.python3Packages.virt-firmware}/bin/virt-fw-vars \
+                  -i ${OVMF.variables} \
+                  -o $out \
+                  --set-true SecureBoot
+            '';
+          };
+      };
+    };
   };
 }
