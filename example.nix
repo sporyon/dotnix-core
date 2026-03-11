@@ -2,7 +2,7 @@
 {
   imports = [
     # Base configuration
-    ({ inputs, ... }: {
+    ({ config, inputs, lib, pkgs, ... }: {
       imports = [
         inputs.self.nixosModules.polkadot-validator
         inputs.self.nixosModules.selinux
@@ -38,6 +38,21 @@
       };
 
       networking.firewall.allowedTCPPorts = [ 22 ];
+
+      # Enable nixos-rebuild
+      system.activationScripts.nixos-config = let
+        flake = pkgs.writeText "nixos-config" /* nix */ ''
+          {
+            inputs.dotnix-core.url = ${builtins.toJSON inputs.self};
+            outputs = inputs: {
+              nixosConfigurations.${builtins.toJSON config.networking.hostName} =
+                inputs.dotnix-core.nixosConfigurations.${builtins.toJSON "example-${config.nixpkgs.system}"};
+            };
+          }
+        '';
+      in /* sh */ ''
+        cp --update=none -L ${flake} /etc/nixos/flake.nix
+      '';
 
       system.stateVersion = "24.11";
     })
@@ -84,7 +99,7 @@
     })
 
     # VM configuration
-    ({ config, inputs, pkgs, ... }: {
+    ({ config, inputs, lib, pkgs, ... }: {
       # following configuration is used only by nixos-rebuild build-vm
       virtualisation.vmVariant = {
         boot.kernelParams = [ "console=ttyS0" ];
@@ -96,7 +111,7 @@
         };
 
         # Enable nixos-rebuild within a VM
-        system.activationScripts.nixos-config = let
+        system.activationScripts.nixos-config = lib.mkForce (let
           flake = pkgs.writeText "nixos-config" /* nix */ ''
             {
               inputs.dotnix-core.url = ${builtins.toJSON inputs.self};
@@ -116,7 +131,7 @@
           '';
         in /* sh */ ''
           cp --update=none -L ${flake} /etc/nixos/flake.nix
-        '';
+        '');
       };
     })
 
