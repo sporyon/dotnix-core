@@ -283,7 +283,73 @@
   in {
     environment.systemPackages = lib.flip lib.concatMap enabledInstances (cfg: [
       pkgs.${cfg.controlName}
-    ]);
+    ]) ++ [
+      (pkgs.stdenvNoCC.mkDerivation {
+        name = "polkadot-validator-completion";
+        src = pkgs.writeText "polkadot-validator-completion.sh" /* sh */ ''
+          _polkadot_validator_completion_candidates() {
+            echo --backup-keystore
+            echo --clean-logs
+            echo --full-archive-node-setup
+            echo --full-setup
+            echo --prepare
+            echo --restart
+            echo --restore
+            echo --rotate-keys
+            echo --set-node-key
+            echo --snapshot
+            echo --stop
+            echo --unset-node-key
+            echo --update-polkadot
+            echo --update-process-exporter
+            echo --update-promtail
+            echo --update-snapshot-script
+          }
+
+          _polkadot_validator_completion() {
+            local cur prev words cword
+            _init_completion || return
+
+            case $prev in
+              --backup-keystore|\
+              --clean-logs|\
+              --full-archive-node-setup|\
+              --full-setup|\
+              --prepare|\
+              --restart|\
+              --rotate-keys|\
+              --set-node-key|\
+              --snapshot|\
+              --stop|\
+              --unset-node-key|\
+              --update-polkadot|\
+              --update-process-exporter|\
+              --update-promtail|\
+              --update-snapshot-script)
+                # options without further parameters
+                printf '\a' >&2
+                return
+                ;;
+              --restore)
+                _filedir
+                return
+                ;;
+            esac
+
+            COMPREPLY=( $(compgen -W "$(_polkadot_validator_completion_candidates)" -- "$cur") )
+          }
+
+          complete -F _polkadot_validator_completion ${lib.concatMapStringsSep " " (cfg: cfg.controlName) enabledInstances}
+        '';
+        dontUnpack = true;
+        installPhase = /* sh */ ''
+          mkdir -p $out/share/bash-completion/completions
+          for controlName in ${lib.concatMapStringsSep " " (cfg: lib.escapeShellArg cfg.controlName) enabledInstances}; do
+            ln -s "$src" $out/share/bash-completion/completions/"$controlName"
+          done
+        '';
+      })
+    ];
     nixpkgs.overlays = lib.flip lib.concatMap enabledInstances (cfg: [(self: super: {
       ${cfg.controlName} = self.writers.writeBashBin cfg.controlName /* sh */ ''
         # ${cfg.controlName} - Management Utility for the Polkadot Validator (${cfg.systemd.unitName})
