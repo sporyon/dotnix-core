@@ -186,6 +186,36 @@
 
           ; Allow systemd to start sessions.
           (allow init_t self (system (start stop)))
+
+          ; Allow nixos-rebuild switch
+          (allow init_t init_runtime_t (service (reload)))
+          (allow init_t unlabeled_t (service (reload)))
+          (allow sysadm_systemd_t default_t (dir (rename)))
+          (allow sysadm_systemd_t default_t (fifo_file (create getattr open read unlink write)))
+          (allow sysadm_systemd_t default_t (file (ioctl link rename)))
+          (allow sysadm_systemd_t default_t (lnk_file (setattr)))
+          (allow sysadm_systemd_t devpts_t (chr_file (getattr ioctl open read setattr write)))
+          (allow sysadm_systemd_t devpts_t (dir (search)))
+          (allow sysadm_systemd_t devpts_t (filesystem (mount)))
+          (allow sysadm_systemd_t fs_t (filesystem (unmount)))
+          (allow sysadm_systemd_t kvm_device_t (chr_file (getattr)))
+          (allow sysadm_systemd_t proc_t (dir (mounton)))
+          (allow sysadm_systemd_t proc_t (filesystem (mount)))
+          (allow sysadm_systemd_t ptmx_t (chr_file (ioctl open read write)))
+          (allow sysadm_systemd_t random_device_t (chr_file (getattr)))
+          (allow sysadm_systemd_t self (capability (chown fowner fsetid setgid setuid)))
+          (allow sysadm_systemd_t self (cap_userns (dac_read_search kill net_admin setgid setuid sys_admin sys_chroot sys_ptrace)))
+          (allow sysadm_systemd_t self (process (sigkill)))
+          (allow sysadm_systemd_t self (user_namespace (create)))
+          (allow sysadm_systemd_t sysctl_t (file (getattr open read)))
+          (allow sysadm_systemd_t sysctl_vm_t (file (getattr open read)))
+          (allow sysadm_systemd_t systemd_transient_unit_t (service (status)))
+          (allow sysadm_systemd_t systemd_user_tmpfs_t (file (execute map)))
+          (allow sysadm_systemd_t tmpfs_t (filesystem (mount)))
+          (allow sysadm_systemd_t tmp_t (file (unlink)))
+          (allow sysadm_systemd_t unlabeled_t (dir (lock mounton rename reparent rmdir setattr)))
+          (allow sysadm_systemd_t unlabeled_t (file (append mounton rename)))
+          (allow sysadm_systemd_t unlabeled_t (lnk_file (setattr)))
         '';
       })
     ];
