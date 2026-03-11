@@ -39,7 +39,7 @@
                   ./pkgs/sbctl.patch
                 ];
               });
-          build-image = final.callPackage ./pkgs/build-image.nix {};
+          secure-boot.build-image = final.callPackage ./pkgs/secure-boot/build-image.nix {};
           secure-boot.create-fw-vars = final.callPackage ./pkgs/secure-boot/create-fw-vars.nix {};
           selinux.coreutils =
             (final.callPackage "${inputs.nixpkgs}/pkgs/tools/misc/coreutils" { selinuxSupport = true; })

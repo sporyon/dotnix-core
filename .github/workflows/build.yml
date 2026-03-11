@@ -26,7 +26,7 @@ jobs:
 
       - name: Build image
         run: |
-          image_path=$(nix run .#build-image -- .#nixosConfigurations."${{ inputs.configuration_name }}".config.system.build.diskImage)
+          image_path=$(nix run .#secure-boot.build-image -- .#nixosConfigurations."${{ inputs.configuration_name }}".config.system.build.diskImage)
           echo "image_path=$image_path" >&2
           echo "image_path=$image_path" >> "$GITHUB_ENV"
 
