@@ -3,10 +3,6 @@
   imports = [
     # Base configuration
     ({ config, inputs, lib, pkgs, ... }: {
-      imports = [
-        inputs.self.nixosModules.polkadot-validator
-        inputs.self.nixosModules.selinux
-      ];
       nixpkgs.overlays = [
         inputs.self.overlays.default
       ];
@@ -172,7 +168,11 @@
     })
 
     # Validator configuration
-    ({ config, pkgs, ... }: {
+    ({ config, inputs, pkgs, ... }: {
+      imports = [
+        inputs.self.nixosModules.polkadot-validator
+      ];
+
       dotnix.polkadot-validator.canonicalInstanceName = "default";
       dotnix.polkadot-validator.instances.default.enable = true;
       dotnix.polkadot-validator.instances.default.name = "sporyon-dotnix-westend2";
@@ -189,7 +189,11 @@
     })
 
     # SELinux configuration
-    ({ pkgs, ... }: {
+    ({ inputs, pkgs, ... }: {
+      imports = [
+        inputs.self.nixosModules.selinux
+      ];
+
       security.selinux.enable = true;
 
       environment.systemPackages = [
