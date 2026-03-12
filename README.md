@@ -222,3 +222,73 @@ trying to access a random, protected file as root:
 The logs can be examined afterwards to see what exactly has been violated:
 
     dmesg | grep audit.*denied
+
+
+### Secure Boot
+
+Dotnix utilizes [Lanzaboote](https://github.com/nix-community/lanzaboote) to
+enable Secure Boot support that can be fully evaluated in the provided Docker
+image and subsequently deployed to any virtual or physical host that supports
+Secure Boot.  The provided Secure Boot NixOS module can also imported and
+enabled in any flakes-enabled NixOS configuration.
+
+
+#### Generating Secure Boot-enabled Images locally
+
+To locally generate a Secure Boot-enabled Image, you can run:
+
+    nix run .#secure-boot.build-image
+
+If successful, the resulting image will be located beneath the path printed in the last line of the output.
+
+
+#### Generating Secure Boot-enabled Images at GitHub
+
+To generate Secure Boot-enabled images at GitHub:
+
+1. fork this repository from https://github.com/sporyon/dotnix-core
+2. click the GitHub Action to build a ISO image.
+
+The resulting image can be downloaded from the artifacts section of the successful build.
+
+
+#### Run Secure Boot-enabled Image in Docker
+
+_If you don't have a Docker image, yet, please consult the [Docker section](#docker) of this document._
+
+To persist EFI variables across reboots, a storage location has to be provided
+via the the `-v`/`--volume` argument like so:
+
+    docker run --privileged -v "$PWD"/tmp:/shared --rm -it dotnix-docker
+
+
+#### Run Secure Boot-enabled on Hardware
+
+To run either a locally generated or downloaded image, it can then be burnt to a medium, e.g. a USB-stick like so:
+
+    dd if=/path/to/the/nixos.image of=/dev/sdX status=progress bs=4M
+
+_(Adjust paths accordingly.)_
+
+#### Enable Secure Boot
+
+_(Booting securely using Docker requires persistent storage, see "Run Secure Boot-enabled Image in Docker" above.)_
+
+Upon first boot, as Secure Boot-enabled image will generate fresh Secure Boot keys.
+To enable Secure Boot, keys have to be enrolled and the systems has to be rebuilt:
+
+    sbctl enroll-keys --yes-this-might-brick-my-machine
+    nixos-rebuild switch
+
+Afterwards, the system can be rebooted securely.
+
+
+#### Rotate Secure Boot keys
+
+Secure Boot keys are stored in `/var/lib/sbctl/keys` to rotate them, they have
+to be replaced and the system has to be rebuilt.  You can either put your own
+keys there, or generate fresh ones like so:
+
+    rm -Rf /var/lib/sbctl/keys
+    sbctl create-keys
+    nixos-rebuild switch
